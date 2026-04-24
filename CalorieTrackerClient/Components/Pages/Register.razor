@@ -1,0 +1,235 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject JwtAuthStateProvider AuthStateProvider
+
+<h1>Register</h1>
+
+<EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator />
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p>@errorMessage</p>
+    }
+
+    <div>
+        <label for="firstName">First Name</label>
+        <InputText id="firstName"
+                   @bind-Value="registerModel.FirstName"
+                   autocomplete="given-name" />
+        <ValidationMessage For="@(() => registerModel.FirstName)" />
+    </div>
+
+    <div>
+        <label for="lastName">Last Name</label>
+        <InputText id="lastName"
+                   @bind-Value="registerModel.LastName"
+                   autocomplete="family-name" />
+        <ValidationMessage For="@(() => registerModel.LastName)" />
+    </div>
+
+    <div>
+        <label for="email">Email</label>
+        <InputText id="email"
+                   @bind-Value="registerModel.Email"
+                   autocomplete="email" />
+        <ValidationMessage For="@(() => registerModel.Email)" />
+    </div>
+
+    <div>
+        <label for="password">Password</label>
+        <InputText id="password"
+                   @bind-Value="registerModel.Password"
+                   type="@(showPassword ? "text" : "password")"
+                   autocomplete="new-password" />
+
+        <button type="button" @onclick="() => showPassword = !showPassword">
+            @(showPassword ? "Hide" : "Show")
+        </button>
+
+        <ValidationMessage For="@(() => registerModel.Password)" />
+    </div>
+
+    <div>
+        <label for="confirmPassword">Confirm Password</label>
+        <InputText id="confirmPassword"
+                   @bind-Value="registerModel.ConfirmPassword"
+                   type="password"
+                   autocomplete="new-password" />
+        <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+    </div>
+
+    <div>
+        <label for="age">Age</label>
+        <InputNumber id="age" @bind-Value="registerModel.Age" />
+        <ValidationMessage For="@(() => registerModel.Age)" />
+    </div>
+
+    <div>
+        <label for="weight">Weight (kg)</label>
+        <InputNumber id="weight" @bind-Value="registerModel.Weight" />
+        <ValidationMessage For="@(() => registerModel.Weight)" />
+    </div>
+
+    <div>
+        <label for="height">Height (cm)</label>
+        <InputNumber id="height" @bind-Value="registerModel.Height" />
+        <ValidationMessage For="@(() => registerModel.Height)" />
+    </div>
+
+    <div>
+        <label>Gender</label>
+
+        <InputRadioGroup @bind-Value="registerModel.SelectedGender">
+            <label>
+                <InputRadio Value="@Gender.Male" />
+                Male
+            </label>
+
+            <label>
+                <InputRadio Value="@Gender.Female" />
+                Female
+            </label>
+        </InputRadioGroup>
+    </div>
+
+    <div>
+        <label for="activityLevel">Activity Level</label>
+        <InputSelect id="activityLevel"
+                     @bind-Value="registerModel.ActivityLevelID">
+            <option value="0" disabled>Select your activity level</option>
+
+            @foreach (var level in activityLevels)
+            {
+                <option value="@level.ActivityLevelID">@level.Name</option>
+            }
+        </InputSelect>
+
+        <ValidationMessage For="@(() => registerModel.ActivityLevelID)" />
+    </div>
+
+    <div>
+        <label>Your Goal</label>
+
+        <InputRadioGroup @bind-Value="registerModel.GoalID">
+            @foreach (var goal in goals)
+            {
+                <label>
+                    <InputRadio Value="@goal.GoalID" />
+                    @goal.Name
+                </label>
+            }
+        </InputRadioGroup>
+
+        <ValidationMessage For="@(() => registerModel.GoalID)" />
+    </div>
+
+    <button type="submit" disabled="@isLoading">
+        @(isLoading ? "Creating account..." : "Create Account")
+    </button>
+</EditForm>
+
+<p>
+    Already have an account? <a href="/login">Sign in</a>
+</p>
+
+@code {
+    private RegisterModel registerModel = new();
+    private string? errorMessage;
+    private bool isLoading;
+    private bool showPassword;
+
+    private List<ActivityLevelDto> activityLevels = new();
+    private List<GoalDto> goals = new();
+
+    protected override void OnInitialized()
+    {
+        activityLevels = AuthService.GetActivityLevels();
+        goals = AuthService.GetGoals();
+    }
+
+    private async Task HandleRegister()
+    {
+        errorMessage = null;
+        isLoading = true;
+
+        try
+        {
+            var request = new RegisterRequest
+                {
+                    Email = registerModel.Email,
+                    Password = registerModel.Password,
+                    FirstName = registerModel.FirstName,
+                    LastName = registerModel.LastName,
+                    Age = registerModel.Age,
+                    Weight = registerModel.Weight,
+                    Height = registerModel.Height,
+                    SelectedGender = registerModel.SelectedGender,
+                    ActivityLevelID = registerModel.ActivityLevelID,
+                    GoalID = registerModel.GoalID
+                };
+
+            var result = await AuthService.RegisterAsync(request);
+
+            if (result.Success)
+            {
+                AuthStateProvider.NotifyUserAuthentication();
+                Navigation.NavigateTo("/home", replace: true);
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage ?? "Registration failed. Please try again.";
+            }
+        }
+        catch
+        {
+            errorMessage = "Could not reach the server. Please check your connection.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private class RegisterModel
+    {
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(50)]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(50)]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please confirm your password")]
+        [Compare(nameof(Password), ErrorMessage = "Passwords do not match")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [Range(1, 120, ErrorMessage = "Enter a valid age")]
+        public int Age { get; set; }
+
+        [Range(1.0, 500.0, ErrorMessage = "Enter a valid weight in kg")]
+        public double Weight { get; set; }
+
+        [Range(1.0, 300.0, ErrorMessage = "Enter a valid height in cm")]
+        public double Height { get; set; }
+
+        public Gender SelectedGender { get; set; } = Gender.Male;
+
+        [Range(1, int.MaxValue, ErrorMessage = "Please select your activity level")]
+        public int ActivityLevelID { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "Please select your goal")]
+        public int GoalID { get; set; }
+    }
+}

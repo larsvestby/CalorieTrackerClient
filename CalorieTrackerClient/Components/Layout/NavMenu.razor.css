@@ -1,0 +1,6 @@
+.top-row {
+    justify-content: flex-end;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+}
