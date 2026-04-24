@@ -4,136 +4,125 @@
 @inject NavigationManager Navigation
 @inject JwtAuthStateProvider AuthStateProvider
 
-<h1>Register</h1>
 
-<EditForm Model="registerModel" OnValidSubmit="HandleRegister">
-    <DataAnnotationsValidator />
 
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <p>@errorMessage</p>
-    }
+<div class="page-center">
+    <CardContainer>
+        <h1>Register</h1>
 
-    <div>
-        <label for="firstName">First Name</label>
-        <InputText id="firstName"
-                   @bind-Value="registerModel.FirstName"
-                   autocomplete="given-name" />
-        <ValidationMessage For="@(() => registerModel.FirstName)" />
-    </div>
+        <EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+            <DataAnnotationsValidator />
 
-    <div>
-        <label for="lastName">Last Name</label>
-        <InputText id="lastName"
-                   @bind-Value="registerModel.LastName"
-                   autocomplete="family-name" />
-        <ValidationMessage For="@(() => registerModel.LastName)" />
-    </div>
-
-    <div>
-        <label for="email">Email</label>
-        <InputText id="email"
-                   @bind-Value="registerModel.Email"
-                   autocomplete="email" />
-        <ValidationMessage For="@(() => registerModel.Email)" />
-    </div>
-
-    <div>
-        <label for="password">Password</label>
-        <InputText id="password"
-                   @bind-Value="registerModel.Password"
-                   type="@(showPassword ? "text" : "password")"
-                   autocomplete="new-password" />
-
-        <button type="button" @onclick="() => showPassword = !showPassword">
-            @(showPassword ? "Hide" : "Show")
-        </button>
-
-        <ValidationMessage For="@(() => registerModel.Password)" />
-    </div>
-
-    <div>
-        <label for="confirmPassword">Confirm Password</label>
-        <InputText id="confirmPassword"
-                   @bind-Value="registerModel.ConfirmPassword"
-                   type="password"
-                   autocomplete="new-password" />
-        <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
-    </div>
-
-    <div>
-        <label for="age">Age</label>
-        <InputNumber id="age" @bind-Value="registerModel.Age" />
-        <ValidationMessage For="@(() => registerModel.Age)" />
-    </div>
-
-    <div>
-        <label for="weight">Weight (kg)</label>
-        <InputNumber id="weight" @bind-Value="registerModel.Weight" />
-        <ValidationMessage For="@(() => registerModel.Weight)" />
-    </div>
-
-    <div>
-        <label for="height">Height (cm)</label>
-        <InputNumber id="height" @bind-Value="registerModel.Height" />
-        <ValidationMessage For="@(() => registerModel.Height)" />
-    </div>
-
-    <div>
-        <label>Gender</label>
-
-        <InputRadioGroup @bind-Value="registerModel.SelectedGender">
-            <label>
-                <InputRadio Value="@Gender.Male" />
-                Male
-            </label>
-
-            <label>
-                <InputRadio Value="@Gender.Female" />
-                Female
-            </label>
-        </InputRadioGroup>
-    </div>
-
-    <div>
-        <label for="activityLevel">Activity Level</label>
-        <InputSelect id="activityLevel"
-                     @bind-Value="registerModel.ActivityLevelID">
-            <option value="0" disabled>Select your activity level</option>
-
-            @foreach (var level in activityLevels)
+            @if (!string.IsNullOrEmpty(errorMessage))
             {
-                <option value="@level.ActivityLevelID">@level.Name</option>
+                <p>@errorMessage</p>
             }
-        </InputSelect>
+            <div class="grid">
+                <TextInput Label="First name"
+                           Placeholder="Enter first name..."
+                           @bind-Value="registerModel.FirstName" />
+                <ValidationMessage For="@(() => registerModel.FirstName)" />
 
-        <ValidationMessage For="@(() => registerModel.ActivityLevelID)" />
-    </div>
+                <TextInput Label="Last name"
+                           Placeholder="Enter last name..."
+                           @bind-Value="registerModel.LastName" />
+                <ValidationMessage For="@(() => registerModel.LastName)" />
+            </div>
+            
+            <TextInput Label="Email"
+                       Placeholder="Enter email..."
+                       @bind-Value="registerModel.Email" />
+            <ValidationMessage For="@(() => registerModel.Email)" />
 
-    <div>
-        <label>Your Goal</label>
+            <div class="grid">
+                <TextInput Label="Password"
+                           Placeholder="Enter password..."
+                           @bind-Value="registerModel.Password"
+                           Type="@(showPassword ? "text" : "password")" />
+                <ValidationMessage For="@(() => registerModel.Password)" />
 
-        <InputRadioGroup @bind-Value="registerModel.GoalID">
-            @foreach (var goal in goals)
-            {
-                <label>
-                    <InputRadio Value="@goal.GoalID" />
-                    @goal.Name
-                </label>
-            }
-        </InputRadioGroup>
+                <TextInput Label="Confirm Password"
+                           Placeholder="Confirm password..."
+                           @bind-Value="registerModel.ConfirmPassword"
+                           Type="@(showPassword ? "text" : "password")" />
+                <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+            </div>
+            
+            <div>
+                <label for="age">Age</label>
+                <InputNumber id="age" @bind-Value="registerModel.Age" />
+                <ValidationMessage For="@(() => registerModel.Age)" />
+            </div>
 
-        <ValidationMessage For="@(() => registerModel.GoalID)" />
-    </div>
+            <div class="grid">
+                <div>
+                    <label for="weight">Weight (kg)</label>
+                    <InputNumber id="weight" @bind-Value="registerModel.Weight" />
+                    <ValidationMessage For="@(() => registerModel.Weight)" />
+                </div>
 
-    <button type="submit" disabled="@isLoading">
-        @(isLoading ? "Creating account..." : "Create Account")
-    </button>
-</EditForm>
+                <div>
+                    <label for="height">Height (cm)</label>
+                    <InputNumber id="height" @bind-Value="registerModel.Height" />
+                    <ValidationMessage For="@(() => registerModel.Height)" />
+                </div>
+            </div>
 
-<p>
-    Already have an account? <a href="/login">Sign in</a>
-</p>
+            <div>
+                <label>Gender</label>
+
+                <InputRadioGroup @bind-Value="registerModel.SelectedGender">
+                    <label>
+                        <InputRadio Value="@Gender.Male" />
+                        Male
+                    </label>
+
+                    <label>
+                        <InputRadio Value="@Gender.Female" />
+                        Female
+                    </label>
+                </InputRadioGroup>
+            </div>
+
+            <div>
+                <label for="activityLevel">Activity Level</label>
+                <InputSelect id="activityLevel"
+                             @bind-Value="registerModel.ActivityLevelID">
+                    <option value="0" disabled>Select your activity level</option>
+
+                    @foreach (var level in activityLevels)
+                    {
+                        <option value="@level.ActivityLevelID">@level.Name</option>
+                    }
+                </InputSelect>
+
+                <ValidationMessage For="@(() => registerModel.ActivityLevelID)" />
+            </div>
+
+            <div>
+                <label>Goal</label>
+
+                <InputRadioGroup @bind-Value="registerModel.GoalID">
+                    @foreach (var goal in goals)
+                    {
+                        <label>
+                            <InputRadio Value="@goal.GoalID" />
+                            @goal.Name
+                        </label>
+                    }
+                </InputRadioGroup>
+
+                <ValidationMessage For="@(() => registerModel.GoalID)" />
+            </div>
+            <p>
+                Already have an account? <a href="/login">Sign in</a>
+            </p>
+            <button type="submit" disabled="@isLoading">
+                @(isLoading ? "Creating account..." : "Create Account")
+            </button>
+        </EditForm>
+    </CardContainer>
+</div>
 
 @code {
     private RegisterModel registerModel = new();

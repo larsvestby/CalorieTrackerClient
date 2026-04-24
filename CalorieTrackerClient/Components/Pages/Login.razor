@@ -5,46 +5,38 @@
 @inject JwtAuthStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 
-<h1>Login</h1>
+<div class="page-center">
+    <CardContainer>
+        <h2>Login</h2>
+        <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
 
-<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
-    <DataAnnotationsValidator />
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <p>@errorMessage</p>
+            }
 
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <p>@errorMessage</p>
-    }
+            <TextInput Label="Email"
+                       Placeholder="Enter email..."
+                       @bind-Value="loginModel.Email" />
+            <ValidationMessage For="@(() => loginModel.Email)" />
 
-    <div>
-        <label for="email">Email</label>
-        <InputText id="email"
-                   @bind-Value="loginModel.Email"
-                   autocomplete="email" />
-        <ValidationMessage For="@(() => loginModel.Email)" />
-    </div>
+            <TextInput Label="Password"
+                       Placeholder="Enter password..."
+                       Type="@(showPassword ? "text" : "password")"
+                       @bind-Value="loginModel.Password" />
+            <ValidationMessage For="@(() => loginModel.Password)" />
 
-    <div>
-        <label for="password">Password</label>
-        <InputText id="password"
-                   @bind-Value="loginModel.Password"
-                   type="@(showPassword ? "text" : "password")"
-                   autocomplete="current-password" />
+            <button type="submit" disabled="@isLoading">
+                @(isLoading ? "Signing in..." : "Sign In")
+            </button>
+        </EditForm>
 
-        <button type="button" @onclick="() => showPassword = !showPassword">
-            @(showPassword ? "Hide" : "Show")
-        </button>
-
-        <ValidationMessage For="@(() => loginModel.Password)" />
-    </div>
-
-    <button type="submit" disabled="@isLoading">
-        @(isLoading ? "Signing in..." : "Sign In")
-    </button>
-</EditForm>
-
-<p>
-    Don't have an account? <a href="/register">Create one</a>
-</p>
+        <p>
+            Don't have an account? <a href="/register">Create one</a>
+        </p>
+    </CardContainer>
+</div>
 
 @code {
     private LoginModel loginModel = new();

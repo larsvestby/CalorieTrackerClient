@@ -1,0 +1,22 @@
+﻿@using System.Linq.Expressions
+
+<div class="input-group">
+    <label>@Label</label>
+
+    <InputText class="text-input"
+               Value="@Value"
+               ValueChanged="@ValueChanged"
+               ValueExpression="@ValueExpression"
+               type="@Type"
+               placeholder="@Placeholder" />
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Placeholder { get; set; } = "";
+    [Parameter] public string Type { get; set; } = "text";
+
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public Expression<Func<string>>? ValueExpression { get; set; }
+}
