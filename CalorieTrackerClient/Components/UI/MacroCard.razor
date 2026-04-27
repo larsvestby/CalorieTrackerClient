@@ -1,0 +1,18 @@
+﻿<div class="macro-card">
+    <span>@Name</span>
+
+    <strong>@Current.ToString("0")g / @Target.ToString("0")g</strong>
+
+    <div class="macro-progress">
+        <div style="width: @(ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Name { get; set; } = "";
+    [Parameter] public double Current { get; set; }
+    [Parameter] public double Target { get; set; }
+
+    private double ProgressPercent =>
+        Target <= 0 ? 0 : Math.Clamp(Current / Target * 100, 0, 100);
+}

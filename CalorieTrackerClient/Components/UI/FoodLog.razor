@@ -1,0 +1,162 @@
+﻿@inject HttpClient Http
+
+<CardContainer>
+    <div class="food-log">
+        <h2 class="food-log-title">Food log</h2>
+
+        @if (isLoading)
+        {
+            <p class="food-log-status">Loading...</p>
+        }
+        else if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <p class="food-log-status error">@errorMessage</p>
+        }
+        else if (meals is not null)
+        {
+            <div class="meal-list">
+                @foreach (var meal in meals)
+                {
+                    <div class="meal-group">
+                        <div class="meal-header">
+                            <span class="meal-type-label">@meal.MealTypeName</span>
+
+                            <button class="btn-add"
+                            type="button"
+                            title="Add food"
+                            @onclick="() => AddEntry(meal.MealID, meal.SelectedMealType)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" fill="#22c55e" />
+                                    <line x1="12" y1="8" x2="12" y2="16" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+                                    <line x1="8" y1="12" x2="16" y2="12" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        @foreach (var entry in meal.MealEntries)
+                        {
+                            <MealEntry MealEntryID="@entry.MealEntryID"
+                            FoodName="@entry.FoodItem.Name"
+                            QuantityInGrams="@entry.QuantityInGrams"
+                            CaloriesForEntry="@entry.CaloriesForEntry"
+                            OnRemove="RemoveEntry" />
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</CardContainer>
+
+@code {
+    [Parameter] public DateTime Date { get; set; } = DateTime.Today;
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private List<MealViewModel>? meals;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var dateParam = Date.ToString("yyyy-MM-dd");
+            var raw = await Http.GetFromJsonAsync<List<MealResponseDto>>($"api/meal?date={dateParam}") ?? new();
+
+            meals = new List<MealViewModel>
+            {
+                BuildMeal(raw, 0, "Breakfast"),
+                BuildMeal(raw, 1, "Lunch"),
+                BuildMeal(raw, 2, "Dinner"),
+                BuildMeal(raw, 3, "Snack")
+            };
+        }
+        catch
+        {
+            errorMessage = "Could not load food log.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private MealViewModel BuildMeal(List<MealResponseDto> apiMeals, int mealType, string mealTypeName)
+    {
+        var meal = apiMeals.FirstOrDefault(m => m.SelectedMealType == mealType);
+
+        return new MealViewModel
+            {
+                MealID = meal?.MealID ?? 0,
+                SelectedMealType = mealType,
+                MealTypeName = mealTypeName,
+                MealEntries = meal?.MealEntries.Select(e => new EntryViewModel
+                {
+                    MealEntryID = e.MealEntryID,
+                    QuantityInGrams = e.QuantityInGrams,
+                    FoodItem = e.FoodItem,
+                    CaloriesForEntry = e.FoodItem.Calories * (e.QuantityInGrams / 100.0)
+                }).ToList() ?? new()
+            };
+    }
+
+    private void AddEntry(int mealId, int selectedMealType)
+    {
+        //Todo
+    }
+
+    private async Task RemoveEntry(int entryId)
+    {
+        var response = await Http.DeleteAsync($"api/meal/entries/{entryId}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadAsync();
+            await OnChanged.InvokeAsync();
+        }
+    }
+
+    private class MealViewModel
+    {
+        public int MealID { get; set; }
+        public int SelectedMealType { get; set; }
+        public string MealTypeName { get; set; } = "";
+        public List<EntryViewModel> MealEntries { get; set; } = new();
+    }
+
+    private class EntryViewModel
+    {
+        public int MealEntryID { get; set; }
+        public double QuantityInGrams { get; set; }
+        public double CaloriesForEntry { get; set; }
+        public FoodItemDto FoodItem { get; set; } = new();
+    }
+
+    private class MealResponseDto
+    {
+        public int MealID { get; set; }
+        public int SelectedMealType { get; set; }
+        public List<MealEntryResponseDto> MealEntries { get; set; } = new();
+    }
+
+    private class MealEntryResponseDto
+    {
+        public int MealEntryID { get; set; }
+        public double QuantityInGrams { get; set; }
+        public FoodItemDto FoodItem { get; set; } = new();
+    }
+
+    private class FoodItemDto
+    {
+        public string Name { get; set; } = "";
+        public double Calories { get; set; }
+        public double Protein { get; set; }
+        public double Carbohydrates { get; set; }
+        public double Fat { get; set; }
+    }
+}

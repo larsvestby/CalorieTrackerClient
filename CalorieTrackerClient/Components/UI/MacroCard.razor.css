@@ -1,0 +1,38 @@
+﻿.macro-card {
+    background: white;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+    text-align: center;
+}
+
+span {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #aaa;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+strong {
+    color: #555;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.macro-progress {
+    height: 5px;
+    background: #e8e8e8;
+    border-radius: 999px;
+    margin-top: 0.75rem;
+    overflow: hidden;
+}
+
+    .macro-progress div {
+        height: 100%;
+        background: #4ec940;
+        border-radius: 999px;
+        transition: width 0.4s ease;
+    }

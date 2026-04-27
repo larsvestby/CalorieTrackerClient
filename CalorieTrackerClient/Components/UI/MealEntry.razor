@@ -1,0 +1,29 @@
+﻿<div class="meal-entry">
+    <span class="entry-name">@FoodName</span>
+    <span class="entry-quantity">@QuantityInGrams.ToString("0") g</span>
+    <span class="entry-calories">@CaloriesForEntry.ToString("0") Cal</span>
+
+    <button class="btn-remove"
+            type="button"
+            title="Remove"
+            @onclick="HandleRemove">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#ef4444" />
+            <line x1="8" y1="12" x2="16" y2="12" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+    </button>
+</div>
+
+@code {
+    [Parameter] public int MealEntryID { get; set; }
+    [Parameter] public string FoodName { get; set; } = "";
+    [Parameter] public double QuantityInGrams { get; set; }
+    [Parameter] public double CaloriesForEntry { get; set; }
+
+    [Parameter] public EventCallback<int> OnRemove { get; set; }
+
+    private async Task HandleRemove()
+    {
+        await OnRemove.InvokeAsync(MealEntryID);
+    }
+}

@@ -1,0 +1,182 @@
+﻿@inject HttpClient Http
+
+<div class="nutrition-dashboard">
+    <div class="date-nav">
+        <button type="button" @onclick="PreviousDay">&lt;</button>
+        <span>@CurrentDateLabel</span>
+        <button type="button" @onclick="NextDay">&gt;</button>
+    </div>
+    <CardContainer>
+        <div class="calorie-card">
+            @if (isLoading)
+            {
+                    <p>Loading...</p>
+            }
+            else if (!string.IsNullOrEmpty(errorMessage))
+            {
+                    <p>@errorMessage</p>
+            }
+            else if (nutrition is not null)
+            {
+                    <div class="calorie-ring">
+                        <svg viewBox="0 0 120 120">
+                            <path class="ring-bg"
+                                  d="M30 95 A45 45 0 1 1 90 95" />
+
+                            <path class="ring-fill"
+                                  d="M30 95 A45 45 0 1 1 90 95"
+                                 style="stroke-dasharray:@CalorieDash 220;" />
+                        </svg>
+
+                        <div class="ring-text">
+                            <span>@ConsumedCalories/@nutrition.DailyCalories cal</span>
+                            <strong>@CaloriesLeft</strong>
+                            <small>Cal left</small>
+                        </div>
+                    </div>
+
+                    <div class="water-bar">
+                        <div></div>
+                    </div>
+            }
+        </div>
+    </CardContainer>
+
+
+        @if (nutrition is not null)
+        {
+                <div class="macro-grid">
+                    <MacroCard Name="Carbohydrates"
+                               Current="@consumedCarbs"
+                               Target="@nutrition.Macros.CarbsGrams" />
+
+                    <MacroCard Name="Protein"
+                               Current="@consumedProtein"
+                               Target="@nutrition.Macros.ProteinGrams" />
+
+                    <MacroCard Name="Fat"
+                               Current="@consumedFat"
+                               Target="@nutrition.Macros.FatGrams" />
+                </div>
+        }
+        <FoodLog Date="@selectedDate" OnChanged="LoadDataAsync" />
+    </div>
+@code {
+    private NutritionResponseDto? nutrition;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private DateTime selectedDate = DateTime.Today;
+
+    private double ConsumedCalories;
+    private double consumedProtein;
+    private double consumedCarbs;
+    private double consumedFat;
+
+    private string CurrentDateLabel =>
+        selectedDate.Date == DateTime.Today.Date ? "Today" : selectedDate.ToString("MMM d");
+
+    private double CaloriesLeft =>
+        nutrition is null ? 0 : Math.Max(0, nutrition.DailyCalories - ConsumedCalories);
+
+    private double CalorieProgress =>
+        nutrition is null || nutrition.DailyCalories <= 0
+            ? 0
+            : Math.Clamp(ConsumedCalories / nutrition.DailyCalories, 0, 1);
+
+    private double CalorieDash => CalorieProgress * 220;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task PreviousDay()
+    {
+        selectedDate = selectedDate.AddDays(-1);
+        await LoadDataAsync();
+    }
+
+    private async Task NextDay()
+    {
+        selectedDate = selectedDate.AddDays(1);
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            nutrition ??= await Http.GetFromJsonAsync<NutritionResponseDto>("api/nutrition/me");
+
+            var dateParam = selectedDate.ToString("yyyy-MM-dd");
+            var meals = await Http.GetFromJsonAsync<List<MealResponseDto>>($"api/meal?date={dateParam}");
+
+            ConsumedCalories = 0;
+            consumedProtein = 0;
+            consumedCarbs = 0;
+            consumedFat = 0;
+
+            if (meals is not null)
+            {
+                foreach (var meal in meals)
+                {
+                    foreach (var entry in meal.MealEntries)
+                    {
+                        double ratio = entry.QuantityInGrams / 100.0;
+                        ConsumedCalories += entry.FoodItem.Calories * ratio;
+                        consumedProtein += entry.FoodItem.Protein * ratio;
+                        consumedCarbs += entry.FoodItem.Carbohydrates * ratio;
+                        consumedFat += entry.FoodItem.Fat * ratio;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            errorMessage = "Could not load nutrition values.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private class NutritionResponseDto
+    {
+        public double BMR { get; set; }
+        public double TDEE { get; set; }
+        public double DailyCalories { get; set; }
+        public MacroDto Macros { get; set; } = new();
+    }
+
+    private class MacroDto
+    {
+        public double ProteinGrams { get; set; }
+        public double CarbsGrams { get; set; }
+        public double FatGrams { get; set; }
+    }
+
+    private class MealResponseDto
+    {
+        public int MealID { get; set; }
+        public List<MealEntryResponseDto> MealEntries { get; set; } = new();
+    }
+
+    private class MealEntryResponseDto
+    {
+        public double QuantityInGrams { get; set; }
+        public FoodItemDto FoodItem { get; set; } = new();
+    }
+
+    private class FoodItemDto
+    {
+        public double Calories { get; set; }
+        public double Protein { get; set; }
+        public double Carbohydrates { get; set; }
+        public double Fat { get; set; }
+    }
+}
