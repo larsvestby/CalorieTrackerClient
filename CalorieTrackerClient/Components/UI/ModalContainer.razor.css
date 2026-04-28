@@ -9,20 +9,6 @@
     z-index: 999;
 }
 
-.modal-close-btn {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: transparent;
-    border: none;
-    font-size: 1rem;
-    color: #999;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    margin: 0;
+.modal-close-btn:hover {
+    color: var(--text-main);
 }
-
-    .modal-close-btn:hover {
-        color: #333;
-    }

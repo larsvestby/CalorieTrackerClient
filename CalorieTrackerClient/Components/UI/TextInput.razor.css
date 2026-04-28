@@ -1,27 +1,23 @@
 ﻿.input-group {
     display: flex;
     flex-direction: column;
+    gap: 0.35rem;
     width: 100%;
 }
-
-    .input-group label {
-        font-size: 0.75rem;
-        font-weight: 800;
-        color: #777;
-    }
 
 ::deep input.text-input {
     box-sizing: border-box;
     width: 100%;
-    height: 35px;
-    border: none;
+    min-height: 40px;
+    border: 2px solid transparent;
     outline: none;
-    border-radius: 5px;
-    background: #EBEBEB;
-    padding: 0 1rem;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-soft);
+    padding: 0.75rem 1rem;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #333;
+    color: var(--text-main);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
     ::deep input.text-input::placeholder {
@@ -29,12 +25,7 @@
         font-weight: 800;
     }
 
-    ::deep input.text-input {
-        border: 2px solid transparent;
-        transition: border-color 0.2s ease, background 0.2s ease;
-    }
-
     ::deep input.text-input:focus {
-        background: #e8e8e8;
-        border-color: #666;
+        background: var(--color-bg-soft-focus);
+        border-color: var(--color-primary);
     }

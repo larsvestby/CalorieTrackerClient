@@ -2,29 +2,29 @@
     display: block;
     font-size: 0.68rem;
     font-weight: 800;
-    color: #aaa;
+    color: var(--text-soft);
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
 strong {
-    color: #555;
+    color: var(--text-muted);
     font-size: 1.05rem;
     font-weight: 800;
 }
 
 .macro-progress {
     height: 5px;
-    background: #e8e8e8;
-    border-radius: 999px;
+    background: var(--color-bg-soft);
+    border-radius: var(--radius-pill);
     margin-top: 0.75rem;
     overflow: hidden;
 }
 
     .macro-progress div {
         height: 100%;
-        background: #4ec940;
-        border-radius: 999px;
+        background: var(--color-primary-dark);
+        border-radius: var(--radius-pill);
         transition: width 0.4s ease;
     }

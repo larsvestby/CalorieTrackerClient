@@ -6,34 +6,32 @@
 
 <div class="page-center">
     <CardContainer>
-        <h2>Login</h2>
-        <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+        <h1 class="form-title">Login</h1>
+
+        <EditForm class="form" Model="loginModel" OnValidSubmit="HandleLogin">
             <DataAnnotationsValidator />
 
             @if (!string.IsNullOrEmpty(errorMessage))
             {
-                <p>@errorMessage</p>
+                    <p class="form-error">@errorMessage</p>
             }
 
-            <TextInput Label="Email"
-                       Placeholder="Enter email..."
-                       @bind-Value="loginModel.Email" />
-            <ValidationMessage For="@(() => loginModel.Email)" />
+            <div class="form-group">
+                <TextInput Label="Email" Placeholder="Enter email..." @bind-Value="loginModel.Email" />
+                <ValidationMessage For="@(() => loginModel.Email)" />
+            </div>
 
-            <TextInput Label="Password"
-                       Placeholder="Enter password..."
-                       Type="@(showPassword ? "text" : "password")"
-                       @bind-Value="loginModel.Password" />
-            <ValidationMessage For="@(() => loginModel.Password)" />
+            <div class="form-group">
+                <TextInput Label="Password" Placeholder="Enter password..." Type="@(showPassword ? "text" : "password")" @bind-Value="loginModel.Password" />
+                <ValidationMessage For="@(() => loginModel.Password)" />
+            </div>
 
-            <button type="submit" disabled="@isLoading">
+            <button class="btn btn-primary btn-pill" type="submit" disabled="@isLoading">
                 @(isLoading ? "Signing in..." : "Sign In")
             </button>
         </EditForm>
 
-        <p>
-            Don't have an account? <a href="/register">Create one</a>
-        </p>
+        <p class="form-link">Don't have an account? <a href="/register">Create one</a></p>
     </CardContainer>
 </div>
 

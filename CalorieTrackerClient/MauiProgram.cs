@@ -29,10 +29,13 @@ namespace CalorieTrackerClient
 
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddAuthorizationCore();
-
+            builder.Services.AddScoped<IFoodItemService, FoodItemService>();
+            builder.Services.AddScoped<IMealService, MealService>();
+            builder.Services.AddScoped<INutritionService, NutritionService>();
             builder.Services.AddScoped<JwtAuthStateProvider>();
             builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
                 sp.GetRequiredService<JwtAuthStateProvider>());
+
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

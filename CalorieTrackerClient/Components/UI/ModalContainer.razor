@@ -1,12 +1,15 @@
 ﻿<div class="modal-backdrop" @onclick="HandleBackdropClick">
-    <div class="modal-container" @onclick:stopPropagation>
-        @if (ShowCloseButton)
-        {
-            <button type="button" class="modal-close-btn" @onclick="Close">✕</button>
-        }
-        @ChildContent
+    <div @onclick:stopPropagation>
+        <CardContainer>
+            @if (ShowCloseButton)
+            {
+                <button type="button" class="modal-close-btn" @onclick="Close">✕</button>
+            }
+            @ChildContent
+        </CardContainer>
     </div>
 </div>
+
 
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }

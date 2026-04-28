@@ -1,53 +1,54 @@
 ﻿@page "/nutrition"
 @attribute [Authorize]
-@inject HttpClient Http
+@inject INutritionService NutritionService
+@inject IMealService MealService
 
 <div class="nutrition-dashboard">
     <div class="date-nav">
-        <button type="button" @onclick="PreviousDay">&lt;</button>
+        <button class="btn-icon" type="button" @onclick="PreviousDay" aria-label="Previous day">&lt;</button>
         <span>@CurrentDateLabel</span>
-        <button type="button" @onclick="NextDay">&gt;</button>
+        <button class="btn-icon" type="button" @onclick="NextDay" aria-label="Next day">&gt;</button>
     </div>
 
     <CardContainer>
         <div class="calorie-card">
             @if (isLoading)
             {
-                    <p>Loading...</p>
+                        <p class="status-text">Loading...</p>
             }
             else if (!string.IsNullOrEmpty(errorMessage))
             {
-                    <p>@errorMessage</p>
+                        <p class="status-text error">@errorMessage</p>
             }
             else if (nutrition is not null)
             {
-                    <div class="calorie-ring">
-                        <svg viewBox="0 0 120 120">
-                            <path class="ring-bg" d="M30 95 A45 45 0 1 1 90 95" />
-                            <path class="ring-fill" d="M30 95 A45 45 0 1 1 90 95"
-                                  style="stroke-dasharray:@CalorieDash 220;" />
-                        </svg>
-                        <div class="ring-text">
-                            <span>@ConsumedCalories.ToString("0")/@nutrition.DailyCalories.ToString("0") cal</span>
-                            <strong>@CaloriesLeft.ToString("0")</strong>
-                            <small>Cal left</small>
+                        <div class="calorie-ring">
+                            <svg viewBox="0 0 120 120">
+                                <path class="ring-bg" d="M30 95 A45 45 0 1 1 90 95" />
+                                <path class="ring-fill" d="M30 95 A45 45 0 1 1 90 95"
+                                      style="stroke-dasharray:@CalorieDash 220;" />
+                            </svg>
+                            <div class="ring-text">
+                                <span>@ConsumedCalories.ToString("0")/@nutrition.DailyCalories.ToString("0") cal</span>
+                                <strong>@CaloriesLeft.ToString("0")</strong>
+                                <small>Cal left</small>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="water-bar">
-                        <div></div>
-                    </div>
+                        <div class="water-bar">
+                            <div></div>
+                        </div>
             }
         </div>
     </CardContainer>
 
     @if (nutrition is not null)
     {
-            <div class="macro-grid">
-                <MacroCard Name="Carbohydrates" Current="@consumedCarbs"  Target="@nutrition.Macros.CarbsGrams" />
-                <MacroCard Name="Protein"       Current="@consumedProtein" Target="@nutrition.Macros.ProteinGrams" />
-                <MacroCard Name="Fat"           Current="@consumedFat"    Target="@nutrition.Macros.FatGrams" />
-            </div>
+                <div class="macro-grid">
+                    <MacroCard Name="Carbohydrates" Current="@consumedCarbs"  Target="@nutrition.Macros.CarbsGrams" />
+                    <MacroCard Name="Protein"       Current="@consumedProtein" Target="@nutrition.Macros.ProteinGrams" />
+                    <MacroCard Name="Fat"           Current="@consumedFat"    Target="@nutrition.Macros.FatGrams" />
+                </div>
     }
 
     <FoodLog Date="@selectedDate" OnChanged="LoadDataAsync" />
@@ -98,10 +99,9 @@
 
         try
         {
-            nutrition ??= await Http.GetFromJsonAsync<NutritionResponseDto>("api/nutrition/me");
+            nutrition ??= await NutritionService.GetMineAsync();
 
-            var meals = await Http.GetFromJsonAsync<List<MealResponseDto>>(
-                $"api/meal?date={selectedDate:yyyy-MM-dd}");
+            var meals = await MealService.GetByDateAsync(selectedDate);
 
             ConsumedCalories = consumedProtein = consumedCarbs = consumedFat = 0;
 

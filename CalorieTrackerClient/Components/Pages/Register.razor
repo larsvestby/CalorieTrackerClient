@@ -3,123 +3,101 @@
 @inject NavigationManager Navigation
 @inject JwtAuthStateProvider AuthStateProvider
 
-
-
 <div class="page-center">
     <CardContainer>
-        <h1>Register</h1>
+        <h1 class="form-title">Register</h1>
 
-        <EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+        <EditForm class="form" Model="registerModel" OnValidSubmit="HandleRegister">
             <DataAnnotationsValidator />
 
             @if (!string.IsNullOrEmpty(errorMessage))
             {
-                <p>@errorMessage</p>
+                    <p class="form-error">@errorMessage</p>
             }
-            <div class="grid">
-                <TextInput Label="First name"
-                           Placeholder="Enter first name..."
-                           @bind-Value="registerModel.FirstName" />
-                <ValidationMessage For="@(() => registerModel.FirstName)" />
-
-                <TextInput Label="Last name"
-                           Placeholder="Enter last name..."
-                           @bind-Value="registerModel.LastName" />
-                <ValidationMessage For="@(() => registerModel.LastName)" />
-            </div>
-            
-            <TextInput Label="Email"
-                       Placeholder="Enter email..."
-                       @bind-Value="registerModel.Email" />
-            <ValidationMessage For="@(() => registerModel.Email)" />
 
             <div class="grid">
-                <TextInput Label="Password"
-                           Placeholder="Enter password..."
-                           @bind-Value="registerModel.Password"
-                           Type="@(showPassword ? "text" : "password")" />
-                <ValidationMessage For="@(() => registerModel.Password)" />
-
-                <TextInput Label="Confirm Password"
-                           Placeholder="Confirm password..."
-                           @bind-Value="registerModel.ConfirmPassword"
-                           Type="@(showPassword ? "text" : "password")" />
-                <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+                <div class="form-group">
+                    <TextInput Label="First name" Placeholder="Enter first name..." @bind-Value="registerModel.FirstName" />
+                    <ValidationMessage For="@(() => registerModel.FirstName)" />
+                </div>
+                <div class="form-group">
+                    <TextInput Label="Last name" Placeholder="Enter last name..." @bind-Value="registerModel.LastName" />
+                    <ValidationMessage For="@(() => registerModel.LastName)" />
+                </div>
             </div>
-            
-            <div>
-                <label for="age">Age</label>
-                <InputNumber id="age" @bind-Value="registerModel.Age" />
+
+            <div class="form-group">
+                <TextInput Label="Email" Placeholder="Enter email..." @bind-Value="registerModel.Email" />
+                <ValidationMessage For="@(() => registerModel.Email)" />
+            </div>
+
+            <div class="grid">
+                <div class="form-group">
+                    <TextInput Label="Password" Placeholder="Enter password..." @bind-Value="registerModel.Password" Type="@(showPassword ? "text" : "password")" />
+                    <ValidationMessage For="@(() => registerModel.Password)" />
+                </div>
+                <div class="form-group">
+                    <TextInput Label="Confirm password" Placeholder="Confirm password..." @bind-Value="registerModel.ConfirmPassword" Type="@(showPassword ? "text" : "password")" />
+                    <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="age">Age</label>
+                <InputNumber id="age" class="form-control" @bind-Value="registerModel.Age" />
                 <ValidationMessage For="@(() => registerModel.Age)" />
             </div>
 
             <div class="grid">
-                <div>
-                    <label for="weight">Weight (kg)</label>
-                    <InputNumber id="weight" @bind-Value="registerModel.Weight" />
+                <div class="form-group">
+                    <label class="form-label" for="weight">Weight (kg)</label>
+                    <InputNumber id="weight" class="form-control" @bind-Value="registerModel.Weight" />
                     <ValidationMessage For="@(() => registerModel.Weight)" />
                 </div>
-
-                <div>
-                    <label for="height">Height (cm)</label>
-                    <InputNumber id="height" @bind-Value="registerModel.Height" />
+                <div class="form-group">
+                    <label class="form-label" for="height">Height (cm)</label>
+                    <InputNumber id="height" class="form-control" @bind-Value="registerModel.Height" />
                     <ValidationMessage For="@(() => registerModel.Height)" />
                 </div>
             </div>
 
-            <div>
-                <label>Gender</label>
-
-                <InputRadioGroup @bind-Value="registerModel.SelectedGender">
-                    <label>
-                        <InputRadio Value="@Gender.Male" />
-                        Male
-                    </label>
-
-                    <label>
-                        <InputRadio Value="@Gender.Female" />
-                        Female
-                    </label>
+            <div class="form-group">
+                <span class="form-label">Gender</span>
+                <InputRadioGroup class="radio-group" @bind-Value="registerModel.SelectedGender">
+                    <label class="radio-option"><InputRadio Value="@Gender.Male" /> Male</label>
+                    <label class="radio-option"><InputRadio Value="@Gender.Female" /> Female</label>
                 </InputRadioGroup>
             </div>
 
-            <div>
-                <label for="activityLevel">Activity Level</label>
-                <InputSelect id="activityLevel"
-                             @bind-Value="registerModel.ActivityLevelID">
+            <div class="form-group">
+                <label class="form-label" for="activityLevel">Activity level</label>
+                <InputSelect id="activityLevel" class="form-control" @bind-Value="registerModel.ActivityLevelID">
                     <option value="0" disabled>Select your activity level</option>
-
                     @foreach (var level in activityLevels)
                     {
-                        <option value="@level.ActivityLevelID">@level.Name</option>
+                            <option value="@level.ActivityLevelID">@level.Name</option>
                     }
                 </InputSelect>
-
                 <ValidationMessage For="@(() => registerModel.ActivityLevelID)" />
             </div>
 
-            <div>
-                <label>Goal</label>
-
-                <InputRadioGroup @bind-Value="registerModel.GoalID">
+            <div class="form-group">
+                <span class="form-label">Goal</span>
+                <InputRadioGroup class="radio-group" @bind-Value="registerModel.GoalID">
                     @foreach (var goal in goals)
                     {
-                        <label>
-                            <InputRadio Value="@goal.GoalID" />
-                            @goal.Name
-                        </label>
+                            <label class="radio-option"><InputRadio Value="@goal.GoalID" /> @goal.Name</label>
                     }
                 </InputRadioGroup>
-
                 <ValidationMessage For="@(() => registerModel.GoalID)" />
             </div>
-            <p>
-                Already have an account? <a href="/login">Sign in</a>
-            </p>
-            <button type="submit" disabled="@isLoading">
+
+            <button class="btn btn-primary btn-pill" type="submit" disabled="@isLoading">
                 @(isLoading ? "Creating account..." : "Create Account")
             </button>
         </EditForm>
+
+        <p class="form-link">Already have an account? <a href="/login">Sign in</a></p>
     </CardContainer>
 </div>
 

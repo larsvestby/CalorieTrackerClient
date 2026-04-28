@@ -1,4 +1,4 @@
-﻿@inject HttpClient Http
+﻿@inject IFoodItemService FoodItemService
 
 <ModalContainer OnClose="OnClose" ShowCloseButton="false">
     <div class="new-food-modal">
@@ -16,12 +16,12 @@
 
         @if (!string.IsNullOrEmpty(error))
         {
-            <p class="error">@error</p>
+                <p class="form-error">@error</p>
         }
 
         <div class="modal-actions">
-            <button type="button" class="discard-btn" @onclick="OnClose">Discard</button>
-            <button type="button" class="save-btn" @onclick="Save" disabled="@isSaving">
+            <button type="button" class="btn btn-danger btn-pill" @onclick="OnClose">Discard</button>
+            <button type="button" class="btn btn-primary btn-pill" @onclick="Save" disabled="@isSaving">
                 @(isSaving ? "Saving..." : "Save")
             </button>
         </div>
@@ -69,8 +69,13 @@
                     Fat = fat
                 };
 
-            var response = await Http.PostAsJsonAsync("api/fooditem", dto);
-            if (!response.IsSuccessStatusCode) { error = "Could not save food item."; return; }
+            var success = await FoodItemService.CreateAsync(dto);
+
+            if (!success)
+            {
+                error = "Could not save food item.";
+                return;
+            }
 
             await OnCreated.InvokeAsync();
         }

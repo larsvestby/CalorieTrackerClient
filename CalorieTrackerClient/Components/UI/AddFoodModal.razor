@@ -1,4 +1,5 @@
-﻿@inject HttpClient Http
+﻿@inject IFoodItemService FoodItemService
+@inject IMealService MealService
 
 <ModalContainer OnClose="OnClose">
     <h3>Log food — @MealTypeName</h3>
@@ -10,63 +11,65 @@
                @bind="searchText"
                @bind:event="oninput"
                @onkeydown="OnKeyDown" />
-        <button type="button" @onclick="SearchFoods">Search</button>
-        <button type="button" @onclick="OpenNewFoodModal">+ New Food Item</button>
+        <div class="grid">
+            <button class="btn btn-primary btn-pill" type="button" @onclick="SearchFoods">Search</button>
+            <button class="btn btn-primary btn-pill" type="button" @onclick="OpenNewFoodModal">+ New Food Item</button>
+        </div>
     </div>
 
     @if (isSearching)
     {
-            <p class="modal-status">Searching...</p>
+                <p class="modal-status">Searching...</p>
     }
     else if (!string.IsNullOrEmpty(searchError))
     {
-            <p class="modal-status error">@searchError</p>
+                <p class="modal-status error">@searchError</p>
     }
     else if (searchResults is not null)
     {
         @if (searchResults.Count == 0)
         {
-                    <p class="modal-status">No results for "@lastSearch"</p>
+                            <p class="modal-status">No results for "@lastSearch"</p>
         }
         else
         {
-                    <div class="food-table">
+                            <div class="food-table">
                 @foreach (var food in searchResults)
                 {
-                                <div class="food-row">
-                                    <span class="food-name">@food.Name @(food.Brand is not null ? $"({food.Brand})" : "")</span>
-                                    <span class="food-macros">P: @food.Protein.ToString("0")g  C: @food.Carbohydrates.ToString("0")g  F: @food.Fat.ToString("0")g</span>
-                                    <span class="food-cals">@food.Calories.ToString("0") kcal</span>
+                                            <div class="food-row">
+                                                <span class="food-name">@food.Name @(food.Brand is not null ? $"({food.Brand})" : "")</span>
+                                                <span class="food-macros">P: @food.Protein.ToString("0")g  C: @food.Carbohydrates.ToString("0")g  F: @food.Fat.ToString("0")g</span>
+                                                <span class="food-cals">@food.Calories.ToString("0") kcal</span>
 
                         @if (pendingFood?.FoodItemID == food.FoodItemID)
                         {
-                                            <div class="amount-row">
-                                                <input class="amount-input" type="number" min="1" placeholder="g" @bind="pendingGrams" />
-                                                <button type="button" @onclick="ConfirmAdd" disabled="@isAdding">
+                                                            <div class="amount-row">
+                                                                <input class="amount-input" type="number" min="1" placeholder="g" @bind="pendingGrams" />
+                                                                <button class="btn btn-primary btn-pill" type="button" @onclick="ConfirmAdd" disabled="@isAdding">
                                     @(isAdding ? "..." : "Log")
-                                                </button>
-                                                <button type="button" class="btn-cancel" @onclick="CancelPending">✕</button>
-                                            </div>
+                                                                </button>
+                                                                <button type="button" class="btn btn-muted btn-pill" @onclick="CancelPending">✕</button>
+                                                            </div>
                         }
                         else
                         {
-                                            <button type="button" @onclick="() => SelectFood(food)">Add</button>
+                                                            <button class="btn btn-primary btn-pill" type="button" @onclick="() => SelectFood(food)">Add</button>
                         }
-                                </div>
+                                            </div>
                 }
-                    </div>
+                            </div>
         }
     }
 
     @if (!string.IsNullOrEmpty(addError))
     {
-            <p class="modal-status error">@addError</p>
+                <p class="modal-status error">@addError</p>
     }
 </ModalContainer>
 
 @if (showNewFoodModal)
 {
-        <NewFoodItemModal OnClose="CloseNewFoodModal" OnCreated="OnNewFoodCreated" />
+            <NewFoodItemModal OnClose="CloseNewFoodModal" OnCreated="OnNewFoodCreated" />
 }
 
 @code {
@@ -125,8 +128,7 @@
 
         try
         {
-            searchResults = await Http.GetFromJsonAsync<List<FoodItemDto>>(
-                $"api/fooditem?search={Uri.EscapeDataString(searchText)}");
+            searchResults = await FoodItemService.SearchAsync(searchText);
         }
         catch
         {
@@ -160,18 +162,27 @@
 
             if (mealId == 0)
             {
-                var mealResp = await Http.PostAsJsonAsync("api/meal", new { Date, SelectedMealType });
-                if (!mealResp.IsSuccessStatusCode) { addError = "Could not create meal."; return; }
-
-                var created = await mealResp.Content.ReadFromJsonAsync<MealResponseDto>();
+                var created = await MealService.CreateAsync(Date, SelectedMealType);
                 mealId = created?.MealID ?? 0;
+
+                if (mealId == 0)
+                {
+                    addError = "Could not create meal.";
+                    return;
+                }
             }
 
-            var entryResp = await Http.PostAsJsonAsync($"api/meal/{mealId}/entries",
-                new { FoodItemID = pendingFood.FoodItemID, QuantityInGrams = pendingGrams });
+            var success = await MealService.AddEntryAsync(
+                mealId,
+                pendingFood.FoodItemID,
+                pendingGrams
+            );
 
-            if (!entryResp.IsSuccessStatusCode) { addError = "Could not add food entry."; return; }
-
+            if (!success)
+            {
+                addError = "Could not add food entry.";
+                return;
+            }
             pendingFood = null;
             await OnFoodAdded.InvokeAsync();
         }
