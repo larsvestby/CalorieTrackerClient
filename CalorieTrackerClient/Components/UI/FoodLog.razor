@@ -20,11 +20,8 @@
                     <div class="meal-group">
                         <div class="meal-header">
                             <span class="meal-type-label">@meal.MealTypeName</span>
-
-                            <button class="btn-add"
-                            type="button"
-                            title="Add food"
-                            @onclick="() => AddEntry(meal.MealID, meal.SelectedMealType)">
+                            <button class="btn-add" type="button" title="Add food"
+                                    @onclick="() => OpenAddFoodModal(meal.MealID, meal.SelectedMealType)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
                                     <circle cx="12" cy="12" r="10" fill="#22c55e" />
                                     <line x1="12" y1="8" x2="12" y2="16" stroke="white" stroke-width="2.5" stroke-linecap="round" />
@@ -36,10 +33,10 @@
                         @foreach (var entry in meal.MealEntries)
                         {
                             <MealEntry MealEntryID="@entry.MealEntryID"
-                            FoodName="@entry.FoodItem.Name"
-                            QuantityInGrams="@entry.QuantityInGrams"
-                            CaloriesForEntry="@entry.CaloriesForEntry"
-                            OnRemove="RemoveEntry" />
+                                       FoodName="@entry.FoodItem.Name"
+                                       QuantityInGrams="@entry.QuantityInGrams"
+                                       CaloriesForEntry="@entry.CaloriesForEntry"
+                                       OnRemove="RemoveEntry" />
                         }
                     </div>
                 }
@@ -48,6 +45,15 @@
     </div>
 </CardContainer>
 
+@if (showAddFoodModal)
+{
+    <AddFoodModal OnClose="CloseAddFoodModal"
+                  OnFoodAdded="OnFoodAdded"
+                  MealID="@selectedMealId"
+                  SelectedMealType="@selectedMealType"
+                  Date="@Date" />
+}
+
 @code {
     [Parameter] public DateTime Date { get; set; } = DateTime.Today;
     [Parameter] public EventCallback OnChanged { get; set; }
@@ -55,6 +61,10 @@
     private List<MealViewModel>? meals;
     private bool isLoading = true;
     private string? errorMessage;
+
+    private bool showAddFoodModal;
+    private int selectedMealId;
+    private int selectedMealType;
 
     protected override async Task OnParametersSetAsync() => await LoadAsync();
 
@@ -65,15 +75,15 @@
 
         try
         {
-            var dateParam = Date.ToString("yyyy-MM-dd");
-            var raw = await Http.GetFromJsonAsync<List<MealResponseDto>>($"api/meal?date={dateParam}") ?? new();
+            var raw = await Http.GetFromJsonAsync<List<MealResponseDto>>(
+                $"api/meal?date={Date:yyyy-MM-dd}") ?? new();
 
             meals = new List<MealViewModel>
             {
                 BuildMeal(raw, 0, "Breakfast"),
                 BuildMeal(raw, 1, "Lunch"),
                 BuildMeal(raw, 2, "Dinner"),
-                BuildMeal(raw, 3, "Snack")
+                BuildMeal(raw, 3, "Snack"),
             };
         }
         catch
@@ -86,39 +96,49 @@
         }
     }
 
-    private MealViewModel BuildMeal(List<MealResponseDto> apiMeals, int mealType, string mealTypeName)
+    private void OpenAddFoodModal(int mealId, int mealType)
     {
-        var meal = apiMeals.FirstOrDefault(m => m.SelectedMealType == mealType);
-
-        return new MealViewModel
-            {
-                MealID = meal?.MealID ?? 0,
-                SelectedMealType = mealType,
-                MealTypeName = mealTypeName,
-                MealEntries = meal?.MealEntries.Select(e => new EntryViewModel
-                {
-                    MealEntryID = e.MealEntryID,
-                    QuantityInGrams = e.QuantityInGrams,
-                    FoodItem = e.FoodItem,
-                    CaloriesForEntry = e.FoodItem.Calories * (e.QuantityInGrams / 100.0)
-                }).ToList() ?? new()
-            };
+        selectedMealId = mealId;
+        selectedMealType = mealType;
+        showAddFoodModal = true;
     }
 
-    private void AddEntry(int mealId, int selectedMealType)
+    private void CloseAddFoodModal() => showAddFoodModal = false;
+
+    private async Task OnFoodAdded()
     {
-        //Todo
+        showAddFoodModal = false;
+        await LoadAsync();
+        await OnChanged.InvokeAsync();
     }
 
     private async Task RemoveEntry(int entryId)
     {
         var response = await Http.DeleteAsync($"api/meal/entries/{entryId}");
-
         if (response.IsSuccessStatusCode)
         {
             await LoadAsync();
             await OnChanged.InvokeAsync();
         }
+    }
+
+    private MealViewModel BuildMeal(List<MealResponseDto> apiMeals, int mealType, string mealTypeName)
+    {
+        var meal = apiMeals.FirstOrDefault(m => m.SelectedMealType == mealType);
+
+        return new MealViewModel
+        {
+            MealID = meal?.MealID ?? 0,
+            SelectedMealType = mealType,
+            MealTypeName = mealTypeName,
+            MealEntries = meal?.MealEntries.Select(e => new EntryViewModel
+            {
+                MealEntryID = e.MealEntryID,
+                QuantityInGrams = e.QuantityInGrams,
+                FoodItem = e.FoodItem,
+                CaloriesForEntry = e.FoodItem.Calories * (e.QuantityInGrams / 100.0)
+            }).ToList() ?? new()
+        };
     }
 
     private class MealViewModel
@@ -135,28 +155,5 @@
         public double QuantityInGrams { get; set; }
         public double CaloriesForEntry { get; set; }
         public FoodItemDto FoodItem { get; set; } = new();
-    }
-
-    private class MealResponseDto
-    {
-        public int MealID { get; set; }
-        public int SelectedMealType { get; set; }
-        public List<MealEntryResponseDto> MealEntries { get; set; } = new();
-    }
-
-    private class MealEntryResponseDto
-    {
-        public int MealEntryID { get; set; }
-        public double QuantityInGrams { get; set; }
-        public FoodItemDto FoodItem { get; set; } = new();
-    }
-
-    private class FoodItemDto
-    {
-        public string Name { get; set; } = "";
-        public double Calories { get; set; }
-        public double Protein { get; set; }
-        public double Carbohydrates { get; set; }
-        public double Fat { get; set; }
     }
 }

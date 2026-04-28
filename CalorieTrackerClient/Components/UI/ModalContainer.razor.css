@@ -1,0 +1,28 @@
+﻿.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    z-index: 999;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    margin: 0;
+}
+
+    .modal-close-btn:hover {
+        color: #333;
+    }

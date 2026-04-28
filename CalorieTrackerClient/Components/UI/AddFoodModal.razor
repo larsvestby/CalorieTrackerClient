@@ -1,0 +1,187 @@
+﻿@inject HttpClient Http
+
+<ModalContainer OnClose="OnClose">
+    <h3>Log food — @MealTypeName</h3>
+
+    <label>Search</label>
+    <div class="search-row">
+        <input class="search-input"
+               placeholder="Enter food name..."
+               @bind="searchText"
+               @bind:event="oninput"
+               @onkeydown="OnKeyDown" />
+        <button type="button" @onclick="SearchFoods">Search</button>
+        <button type="button" @onclick="OpenNewFoodModal">+ New Food Item</button>
+    </div>
+
+    @if (isSearching)
+    {
+            <p class="modal-status">Searching...</p>
+    }
+    else if (!string.IsNullOrEmpty(searchError))
+    {
+            <p class="modal-status error">@searchError</p>
+    }
+    else if (searchResults is not null)
+    {
+        @if (searchResults.Count == 0)
+        {
+                    <p class="modal-status">No results for "@lastSearch"</p>
+        }
+        else
+        {
+                    <div class="food-table">
+                @foreach (var food in searchResults)
+                {
+                                <div class="food-row">
+                                    <span class="food-name">@food.Name @(food.Brand is not null ? $"({food.Brand})" : "")</span>
+                                    <span class="food-macros">P: @food.Protein.ToString("0")g  C: @food.Carbohydrates.ToString("0")g  F: @food.Fat.ToString("0")g</span>
+                                    <span class="food-cals">@food.Calories.ToString("0") kcal</span>
+
+                        @if (pendingFood?.FoodItemID == food.FoodItemID)
+                        {
+                                            <div class="amount-row">
+                                                <input class="amount-input" type="number" min="1" placeholder="g" @bind="pendingGrams" />
+                                                <button type="button" @onclick="ConfirmAdd" disabled="@isAdding">
+                                    @(isAdding ? "..." : "Log")
+                                                </button>
+                                                <button type="button" class="btn-cancel" @onclick="CancelPending">✕</button>
+                                            </div>
+                        }
+                        else
+                        {
+                                            <button type="button" @onclick="() => SelectFood(food)">Add</button>
+                        }
+                                </div>
+                }
+                    </div>
+        }
+    }
+
+    @if (!string.IsNullOrEmpty(addError))
+    {
+            <p class="modal-status error">@addError</p>
+    }
+</ModalContainer>
+
+@if (showNewFoodModal)
+{
+        <NewFoodItemModal OnClose="CloseNewFoodModal" OnCreated="OnNewFoodCreated" />
+}
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnFoodAdded { get; set; }
+    [Parameter] public int SelectedMealType { get; set; }
+    [Parameter] public int MealID { get; set; }
+    [Parameter] public DateTime Date { get; set; } = DateTime.Today;
+
+    private string MealTypeName => SelectedMealType switch
+    {
+        0 => "Breakfast",
+        1 => "Lunch",
+        2 => "Dinner",
+        3 => "Snack",
+        _ => "Meal"
+    };
+
+    private string searchText = "";
+    private string lastSearch = "";
+    private List<FoodItemDto>? searchResults;
+    private bool isSearching;
+    private string? searchError;
+
+    private FoodItemDto? pendingFood;
+    private double pendingGrams = 100;
+    private bool isAdding;
+    private string? addError;
+
+    private bool showNewFoodModal;
+
+    private void OpenNewFoodModal() => showNewFoodModal = true;
+    private void CloseNewFoodModal() => showNewFoodModal = false;
+
+    private async Task OnNewFoodCreated()
+    {
+        showNewFoodModal = false;
+        if (!string.IsNullOrWhiteSpace(searchText))
+            await SearchFoods();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SearchFoods();
+    }
+
+    private async Task SearchFoods()
+    {
+        if (string.IsNullOrWhiteSpace(searchText)) return;
+
+        isSearching = true;
+        searchError = null;
+        searchResults = null;
+        lastSearch = searchText;
+        pendingFood = null;
+
+        try
+        {
+            searchResults = await Http.GetFromJsonAsync<List<FoodItemDto>>(
+                $"api/fooditem?search={Uri.EscapeDataString(searchText)}");
+        }
+        catch
+        {
+            searchError = "Could not search food items.";
+        }
+        finally
+        {
+            isSearching = false;
+        }
+    }
+
+    private void SelectFood(FoodItemDto food)
+    {
+        pendingFood = food;
+        pendingGrams = 100;
+        addError = null;
+    }
+
+    private void CancelPending() => pendingFood = null;
+
+    private async Task ConfirmAdd()
+    {
+        if (pendingFood is null || pendingGrams <= 0) return;
+
+        isAdding = true;
+        addError = null;
+
+        try
+        {
+            int mealId = MealID;
+
+            if (mealId == 0)
+            {
+                var mealResp = await Http.PostAsJsonAsync("api/meal", new { Date, SelectedMealType });
+                if (!mealResp.IsSuccessStatusCode) { addError = "Could not create meal."; return; }
+
+                var created = await mealResp.Content.ReadFromJsonAsync<MealResponseDto>();
+                mealId = created?.MealID ?? 0;
+            }
+
+            var entryResp = await Http.PostAsJsonAsync($"api/meal/{mealId}/entries",
+                new { FoodItemID = pendingFood.FoodItemID, QuantityInGrams = pendingGrams });
+
+            if (!entryResp.IsSuccessStatusCode) { addError = "Could not add food entry."; return; }
+
+            pendingFood = null;
+            await OnFoodAdded.InvokeAsync();
+        }
+        catch
+        {
+            addError = "Something went wrong.";
+        }
+        finally
+        {
+            isAdding = false;
+        }
+    }
+}

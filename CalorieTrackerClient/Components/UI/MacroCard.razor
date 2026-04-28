@@ -1,4 +1,4 @@
-﻿<div class="macro-card">
+﻿<CardContainer>
     <span>@Name</span>
 
     <strong>@Current.ToString("0")g / @Target.ToString("0")g</strong>
@@ -6,7 +6,7 @@
     <div class="macro-progress">
         <div style="width: @(ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%;"></div>
     </div>
-</div>
+</CardContainer>
 
 @code {
     [Parameter] public string Name { get; set; } = "";

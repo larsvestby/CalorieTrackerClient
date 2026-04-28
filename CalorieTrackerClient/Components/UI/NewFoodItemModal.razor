@@ -1,0 +1,96 @@
+﻿@inject HttpClient Http
+
+<ModalContainer OnClose="OnClose" ShowCloseButton="false">
+    <div class="new-food-modal">
+        <h3 class="modal-title">• New Food Item</h3>
+
+        <TextInput Label="Name" Placeholder="Enter food name..." @bind-Value="model.Name" />
+        <TextInput Label="Brand (Optional)" Placeholder="Enter brand name..." @bind-Value="model.Brand" />
+
+        <h4>All Values Per 100g</h4>
+
+        <TextInput Label="Calories" Placeholder="kcal" @bind-Value="model.CaloriesStr" />
+        <TextInput Label="Carbohydrates" Placeholder="grams" @bind-Value="model.CarbsStr" />
+        <TextInput Label="Protein" Placeholder="grams" @bind-Value="model.ProteinStr" />
+        <TextInput Label="Fat" Placeholder="grams" @bind-Value="model.FatStr" />
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <p class="error">@error</p>
+        }
+
+        <div class="modal-actions">
+            <button type="button" class="discard-btn" @onclick="OnClose">Discard</button>
+            <button type="button" class="save-btn" @onclick="Save" disabled="@isSaving">
+                @(isSaving ? "Saving..." : "Save")
+            </button>
+        </div>
+    </div>
+</ModalContainer>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnCreated { get; set; }
+
+    private NewFoodItemModel model = new();
+    private bool isSaving;
+    private string? error;
+
+    private async Task Save()
+    {
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(model.Name))
+        {
+            error = "Name is required.";
+            return;
+        }
+
+        if (!double.TryParse(model.CaloriesStr, out var cal) ||
+            !double.TryParse(model.CarbsStr, out var carbs) ||
+            !double.TryParse(model.ProteinStr, out var protein) ||
+            !double.TryParse(model.FatStr, out var fat))
+        {
+            error = "Please enter valid numbers for all nutritional values.";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new CreateFoodItemDto
+                {
+                    Name = model.Name,
+                    Brand = string.IsNullOrWhiteSpace(model.Brand) ? null : model.Brand,
+                    Calories = cal,
+                    Carbohydrates = carbs,
+                    Protein = protein,
+                    Fat = fat
+                };
+
+            var response = await Http.PostAsJsonAsync("api/fooditem", dto);
+            if (!response.IsSuccessStatusCode) { error = "Could not save food item."; return; }
+
+            await OnCreated.InvokeAsync();
+        }
+        catch
+        {
+            error = "Something went wrong.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class NewFoodItemModel
+    {
+        public string Name { get; set; } = "";
+        public string Brand { get; set; } = "";
+        public string CaloriesStr { get; set; } = "";
+        public string CarbsStr { get; set; } = "";
+        public string ProteinStr { get; set; } = "";
+        public string FatStr { get; set; } = "";
+    }
+}

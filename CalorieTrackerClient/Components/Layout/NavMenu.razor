@@ -1,7 +1,22 @@
-﻿<AuthorizeView>
+﻿@attribute [Authorize]
+@inject IAuthService AuthService
+@inject JwtAuthStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<AuthorizeView>
     <Authorized>
         <div class="top-row">
             <button>User settings</button>
+            <button @onclick="Logout">Logout</button>
         </div>
     </Authorized>
 </AuthorizeView>
+
+@code {
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        AuthStateProvider.NotifyUserLogout();
+        Navigation.NavigateTo("/login", true);
+    }
+}
