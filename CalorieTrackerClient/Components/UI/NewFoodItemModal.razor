@@ -4,27 +4,64 @@
     <div class="new-food-modal">
         <h3 class="modal-title">• New Food Item</h3>
 
-        <TextInput Label="Name" Placeholder="Enter food name..." @bind-Value="model.Name" />
-        <TextInput Label="Brand (Optional)" Placeholder="Enter brand name..." @bind-Value="model.Brand" />
+        <EditForm Model="model" OnValidSubmit="Save" class="form">
+            <DataAnnotationsValidator />
 
-        <h4>All Values Per 100g</h4>
+            @if (!string.IsNullOrEmpty(error))
+            {
+                    <p class="form-error">@error</p>
+            }
 
-        <TextInput Label="Calories" Placeholder="kcal" @bind-Value="model.CaloriesStr" />
-        <TextInput Label="Carbohydrates" Placeholder="grams" @bind-Value="model.CarbsStr" />
-        <TextInput Label="Protein" Placeholder="grams" @bind-Value="model.ProteinStr" />
-        <TextInput Label="Fat" Placeholder="grams" @bind-Value="model.FatStr" />
+            <div class="form-group">
+                <TextInput Label="Name" Placeholder="Enter food name..." @bind-Value="model.Name" />
+                <ValidationMessage For="@(() => model.Name)" />
+            </div>
 
-        @if (!string.IsNullOrEmpty(error))
-        {
-                <p class="form-error">@error</p>
-        }
+            <div class="form-group">
+                <TextInput Label="Brand (Optional)" Placeholder="Enter brand name..." @bind-Value="model.Brand" />
+                <ValidationMessage For="@(() => model.Brand)" />
+            </div>
 
-        <div class="modal-actions">
-            <button type="button" class="btn btn-danger btn-pill" @onclick="OnClose">Discard</button>
-            <button type="button" class="btn btn-primary btn-pill" @onclick="Save" disabled="@isSaving">
-                @(isSaving ? "Saving..." : "Save")
-            </button>
-        </div>
+            <h4>All Values Per 100g</h4>
+
+            <div class="grid">
+                <div class="form-group">
+                    <label class="form-label" for="calories">Calories</label>
+                    <InputNumber id="calories" class="form-control" @bind-Value="model.Calories" />
+                    <ValidationMessage For="@(() => model.Calories)" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="carbohydrates">Carbohydrates</label>
+                    <InputNumber id="carbohydrates" class="form-control" @bind-Value="model.Carbohydrates" />
+                    <ValidationMessage For="@(() => model.Carbohydrates)" />
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="form-group">
+                    <label class="form-label" for="protein">Protein</label>
+                    <InputNumber id="protein" class="form-control" @bind-Value="model.Protein" />
+                    <ValidationMessage For="@(() => model.Protein)" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="fat">Fat</label>
+                    <InputNumber id="fat" class="form-control" @bind-Value="model.Fat" />
+                    <ValidationMessage For="@(() => model.Fat)" />
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-danger btn-pill" @onclick="OnClose">
+                    Discard
+                </button>
+
+                <button type="submit" class="btn btn-primary btn-pill" disabled="@isSaving">
+                    @(isSaving ? "Saving..." : "Save")
+                </button>
+            </div>
+        </EditForm>
     </div>
 </ModalContainer>
 
@@ -39,22 +76,6 @@
     private async Task Save()
     {
         error = null;
-
-        if (string.IsNullOrWhiteSpace(model.Name))
-        {
-            error = "Name is required.";
-            return;
-        }
-
-        if (!double.TryParse(model.CaloriesStr, out var cal) ||
-            !double.TryParse(model.CarbsStr, out var carbs) ||
-            !double.TryParse(model.ProteinStr, out var protein) ||
-            !double.TryParse(model.FatStr, out var fat))
-        {
-            error = "Please enter valid numbers for all nutritional values.";
-            return;
-        }
-
         isSaving = true;
 
         try
@@ -63,10 +84,10 @@
                 {
                     Name = model.Name,
                     Brand = string.IsNullOrWhiteSpace(model.Brand) ? null : model.Brand,
-                    Calories = cal,
-                    Carbohydrates = carbs,
-                    Protein = protein,
-                    Fat = fat
+                    Calories = model.Calories,
+                    Carbohydrates = model.Carbohydrates,
+                    Protein = model.Protein,
+                    Fat = model.Fat
                 };
 
             var success = await FoodItemService.CreateAsync(dto);
@@ -91,11 +112,23 @@
 
     private class NewFoodItemModel
     {
+        [Required(ErrorMessage = "Name is required")]
+        [StringLength(100)]
         public string Name { get; set; } = "";
+
+        [StringLength(100)]
         public string Brand { get; set; } = "";
-        public string CaloriesStr { get; set; } = "";
-        public string CarbsStr { get; set; } = "";
-        public string ProteinStr { get; set; } = "";
-        public string FatStr { get; set; } = "";
+
+        [Range(0.01, 2000, ErrorMessage = "Enter valid calories")]
+        public double Calories { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Enter valid carbohydrates")]
+        public double Carbohydrates { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Enter valid protein")]
+        public double Protein { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Enter valid fat")]
+        public double Fat { get; set; }
     }
 }

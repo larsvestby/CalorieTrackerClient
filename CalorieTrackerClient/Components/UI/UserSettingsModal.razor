@@ -15,58 +15,89 @@
         }
         else
         {
-            <div class="grid">
-                <TextInput Label="First Name" Placeholder="First name..." @bind-Value="model.FirstName" />
-                <TextInput Label="Last Name" Placeholder="Last name..." @bind-Value="model.LastName" />
-            </div>
+            <EditForm Model="model" OnValidSubmit="Save" class="form">
+                <DataAnnotationsValidator />
 
-            <div class="grid">
-                <TextInput Label="Age" Placeholder="Years..." @bind-Value="model.AgeStr" />
-                <TextInput Label="Height (cm)" Placeholder="cm..." @bind-Value="model.HeightStr" />
-                <TextInput Label="Weight (kg)" Placeholder="kg..." @bind-Value="model.WeightStr" />
-            </div>
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <p class="form-error">@error</p>
+                }
 
-            <div class="input-group">
-                <label>Gender</label>
-                <select class="text-input" @bind="model.SelectedGender">
-                    <option value="@Gender.Male">Male</option>
-                    <option value="@Gender.Female">Female</option>
-                </select>
-            </div>
+                <div class="grid">
+                    <div class="form-group">
+                        <TextInput Label="First Name" Placeholder="First name..." @bind-Value="model.FirstName" />
+                        <ValidationMessage For="@(() => model.FirstName)" />
+                    </div>
 
-            <div class="input-group">
-                <label>Activity Level</label>
-                <select class="text-input" @bind="model.ActivityLevelID">
-                    <option value="0" disabled>Select activity level</option>
-                    @foreach (var level in activityLevels)
-                    {
-                        <option value="@level.ActivityLevelID">@level.Name</option>
-                    }
-                </select>
-            </div>
+                    <div class="form-group">
+                        <TextInput Label="Last Name" Placeholder="Last name..." @bind-Value="model.LastName" />
+                        <ValidationMessage For="@(() => model.LastName)" />
+                    </div>
+                </div>
 
-            <div class="input-group">
-                <label>Goal</label>
-                <select class="text-input" @bind="model.GoalID">
-                    <option value="0" disabled>Select goal</option>
-                    @foreach (var goal in goals)
-                    {
-                        <option value="@goal.GoalID">@goal.Name</option>
-                    }
-                </select>
-            </div>
+                <div class="form-group">
+                    <label class="form-label" for="age">Age</label>
+                    <InputNumber id="age" class="form-control" @bind-Value="model.Age" />
+                    <ValidationMessage For="@(() => model.Age)" />
+                </div>
 
-            @if (!string.IsNullOrEmpty(error))
-            {
-                <p class="form-error">@error</p>
-            }
+                <div class="grid">
+                    <div class="form-group">
+                        <label class="form-label" for="height">Height (cm)</label>
+                        <InputNumber id="height" class="form-control" @bind-Value="model.Height" />
+                        <ValidationMessage For="@(() => model.Height)" />
+                    </div>
 
-            <div class="modal-actions">
-                <button type="button" class="btn btn-danger btn-pill" @onclick="OnClose">Discard</button>
-                <button type="button" class="btn btn-primary btn-pill" @onclick="Save" disabled="@isSaving">
-                    @(isSaving ? "Saving..." : "Save")
-                </button>
-            </div>
+                    <div class="form-group">
+                        <label class="form-label" for="weight">Weight (kg)</label>
+                        <InputNumber id="weight" class="form-control" @bind-Value="model.Weight" />
+                        <ValidationMessage For="@(() => model.Weight)" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="gender">Gender</label>
+                    <InputSelect id="gender" class="form-control" @bind-Value="model.SelectedGender">
+                        <option value="@Gender.Male">Male</option>
+                        <option value="@Gender.Female">Female</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => model.SelectedGender)" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="activityLevel">Activity Level</label>
+                    <InputSelect id="activityLevel" class="form-control" @bind-Value="model.ActivityLevelID">
+                        <option value="0" disabled>Select activity level</option>
+                        @foreach (var level in activityLevels)
+                        {
+                            <option value="@level.ActivityLevelID">@level.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => model.ActivityLevelID)" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="goal">Goal</label>
+                    <InputSelect id="goal" class="form-control" @bind-Value="model.GoalID">
+                        <option value="0" disabled>Select goal</option>
+                        @foreach (var goal in goals)
+                        {
+                            <option value="@goal.GoalID">@goal.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => model.GoalID)" />
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-danger btn-pill" @onclick="OnClose">
+                        Discard
+                    </button>
+
+                    <button type="submit" class="btn btn-primary btn-pill" disabled="@isSaving">
+                        @(isSaving ? "Saving..." : "Save")
+                    </button>
+                </div>
+            </EditForm>
         }
     </div>
 </ModalContainer>
@@ -103,9 +134,9 @@
                 {
                     FirstName = user.FirstName,
                     LastName = user.LastName,
-                    AgeStr = user.Age.ToString(),
-                    HeightStr = user.Height.ToString(),
-                    WeightStr = user.Weight.ToString(),
+                    Age = user.Age,
+                    Height = user.Height,
+                    Weight = user.Weight,
                     SelectedGender = user.SelectedGender,
                     ActivityLevelID = user.ActivityLevelID,
                     GoalID = user.GoalID
@@ -124,24 +155,6 @@
     private async Task Save()
     {
         error = null;
-
-        if (string.IsNullOrWhiteSpace(model.FirstName) || string.IsNullOrWhiteSpace(model.LastName))
-        {
-            error = "First and last name are required.";
-            return;
-        }
-
-        if (!int.TryParse(model.AgeStr, out var age) ||
-            !double.TryParse(model.HeightStr, out var height) ||
-            !double.TryParse(model.WeightStr, out var weight))
-        {
-            error = "Please enter valid numbers for age, height and weight.";
-            return;
-        }
-
-        if (model.ActivityLevelID == 0) { error = "Please select an activity level."; return; }
-        if (model.GoalID == 0) { error = "Please select a goal."; return; }
-
         isSaving = true;
 
         try
@@ -150,9 +163,9 @@
                 {
                     FirstName = model.FirstName,
                     LastName = model.LastName,
-                    Age = age,
-                    Height = height,
-                    Weight = weight,
+                    Age = model.Age,
+                    Height = model.Height,
+                    Weight = model.Weight,
                     SelectedGender = model.SelectedGender,
                     ActivityLevelID = model.ActivityLevelID,
                     GoalID = model.GoalID
@@ -160,7 +173,11 @@
 
             var success = await UserService.UpdateMeAsync(dto);
 
-            if (!success) { error = "Could not save settings."; return; }
+            if (!success)
+            {
+                error = "Could not save settings.";
+                return;
+            }
 
             await OnSaved.InvokeAsync();
         }
@@ -176,13 +193,29 @@
 
     private class UserSettingsModel
     {
-        public string FirstName { get; set; } = "";
-        public string LastName { get; set; } = "";
-        public string AgeStr { get; set; } = "";
-        public string HeightStr { get; set; } = "";
-        public string WeightStr { get; set; } = "";
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(50)]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(50)]
+        public string LastName { get; set; } = string.Empty;
+
+        [Range(1, 120, ErrorMessage = "Enter a valid age")]
+        public int Age { get; set; }
+
+        [Range(1.0, 300.0, ErrorMessage = "Enter a valid height in cm")]
+        public double Height { get; set; }
+
+        [Range(1.0, 500.0, ErrorMessage = "Enter a valid weight in kg")]
+        public double Weight { get; set; }
+
         public Gender SelectedGender { get; set; } = Gender.Male;
+
+        [Range(1, int.MaxValue, ErrorMessage = "Please select an activity level")]
         public int ActivityLevelID { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "Please select a goal")]
         public int GoalID { get; set; }
     }
 }
