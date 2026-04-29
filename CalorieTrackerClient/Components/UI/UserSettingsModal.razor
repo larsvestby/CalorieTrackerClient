@@ -1,0 +1,188 @@
+﻿@inject IUserService UserService
+@inject IAuthService AuthService
+
+<ModalContainer OnClose="OnClose" ShowCloseButton="false">
+    <div class="user-settings-modal">
+        <h3 class="modal-title">• User Settings</h3>
+
+        @if (isLoading)
+        {
+            <p class="modal-status">Loading...</p>
+        }
+        else if (!string.IsNullOrEmpty(loadError))
+        {
+            <p class="modal-status error">@loadError</p>
+        }
+        else
+        {
+            <div class="grid">
+                <TextInput Label="First Name" Placeholder="First name..." @bind-Value="model.FirstName" />
+                <TextInput Label="Last Name" Placeholder="Last name..." @bind-Value="model.LastName" />
+            </div>
+
+            <div class="grid">
+                <TextInput Label="Age" Placeholder="Years..." @bind-Value="model.AgeStr" />
+                <TextInput Label="Height (cm)" Placeholder="cm..." @bind-Value="model.HeightStr" />
+                <TextInput Label="Weight (kg)" Placeholder="kg..." @bind-Value="model.WeightStr" />
+            </div>
+
+            <div class="input-group">
+                <label>Gender</label>
+                <select class="text-input" @bind="model.SelectedGender">
+                    <option value="@Gender.Male">Male</option>
+                    <option value="@Gender.Female">Female</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Activity Level</label>
+                <select class="text-input" @bind="model.ActivityLevelID">
+                    <option value="0" disabled>Select activity level</option>
+                    @foreach (var level in activityLevels)
+                    {
+                        <option value="@level.ActivityLevelID">@level.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Goal</label>
+                <select class="text-input" @bind="model.GoalID">
+                    <option value="0" disabled>Select goal</option>
+                    @foreach (var goal in goals)
+                    {
+                        <option value="@goal.GoalID">@goal.Name</option>
+                    }
+                </select>
+            </div>
+
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <p class="form-error">@error</p>
+            }
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-danger btn-pill" @onclick="OnClose">Discard</button>
+                <button type="button" class="btn btn-primary btn-pill" @onclick="Save" disabled="@isSaving">
+                    @(isSaving ? "Saving..." : "Save")
+                </button>
+            </div>
+        }
+    </div>
+</ModalContainer>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private UserSettingsModel model = new();
+    private List<ActivityLevelDto> activityLevels = new();
+    private List<GoalDto> goals = new();
+
+    private bool isLoading = true;
+    private bool isSaving;
+    private string? loadError;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        activityLevels = AuthService.GetActivityLevels();
+        goals = AuthService.GetGoals();
+
+        try
+        {
+            var user = await UserService.GetMeAsync();
+
+            if (user is null)
+            {
+                loadError = "Could not load user settings.";
+                return;
+            }
+
+            model = new UserSettingsModel
+                {
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    AgeStr = user.Age.ToString(),
+                    HeightStr = user.Height.ToString(),
+                    WeightStr = user.Weight.ToString(),
+                    SelectedGender = user.SelectedGender,
+                    ActivityLevelID = user.ActivityLevelID,
+                    GoalID = user.GoalID
+                };
+        }
+        catch
+        {
+            loadError = "Could not load user settings.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task Save()
+    {
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(model.FirstName) || string.IsNullOrWhiteSpace(model.LastName))
+        {
+            error = "First and last name are required.";
+            return;
+        }
+
+        if (!int.TryParse(model.AgeStr, out var age) ||
+            !double.TryParse(model.HeightStr, out var height) ||
+            !double.TryParse(model.WeightStr, out var weight))
+        {
+            error = "Please enter valid numbers for age, height and weight.";
+            return;
+        }
+
+        if (model.ActivityLevelID == 0) { error = "Please select an activity level."; return; }
+        if (model.GoalID == 0) { error = "Please select a goal."; return; }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new UpdateUserDto
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Age = age,
+                    Height = height,
+                    Weight = weight,
+                    SelectedGender = model.SelectedGender,
+                    ActivityLevelID = model.ActivityLevelID,
+                    GoalID = model.GoalID
+                };
+
+            var success = await UserService.UpdateMeAsync(dto);
+
+            if (!success) { error = "Could not save settings."; return; }
+
+            await OnSaved.InvokeAsync();
+        }
+        catch
+        {
+            error = "Something went wrong.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class UserSettingsModel
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string AgeStr { get; set; } = "";
+        public string HeightStr { get; set; } = "";
+        public string WeightStr { get; set; } = "";
+        public Gender SelectedGender { get; set; } = Gender.Male;
+        public int ActivityLevelID { get; set; }
+        public int GoalID { get; set; }
+    }
+}

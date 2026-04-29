@@ -55,10 +55,11 @@ namespace CalorieTrackerClient.Services
         public List<ActivityLevelDto> GetActivityLevels() => ActivityLevelDto.GetAll();
         public List<GoalDto> GetGoals() => GoalDto.GetAll();
 
-        public async Task LogoutAsync()
+        public Task LogoutAsync()
         {
             SecureStorage.Default.Remove(TokenKey);
             _httpClient.DefaultRequestHeaders.Authorization = null;
+            return Task.CompletedTask;
         }
 
         public async Task<string?> GetStoredTokenAsync()

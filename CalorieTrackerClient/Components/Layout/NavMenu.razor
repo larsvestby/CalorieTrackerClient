@@ -6,13 +6,36 @@
 <AuthorizeView>
     <Authorized>
         <div class="top-row">
-            <button class="btn btn-muted btn-pill" type="button">User settings</button>
+            <button class="btn btn-muted btn-pill" type="button" @onclick="OpenSettings">User settings</button>
             <button class="btn btn-primary btn-pill" type="button" @onclick="Logout">Logout</button>
         </div>
     </Authorized>
 </AuthorizeView>
 
+@if (showSettings)
+{
+        <UserSettingsModal 
+            OnClose="CloseSettings" 
+            OnSaved="HandleSaved" />
+}
+
 @code {
+    [Parameter] public EventCallback OnSettingsSaved { get; set; }
+
+    private bool showSettings;
+
+    private void OpenSettings() => showSettings = true;
+    private void CloseSettings() => showSettings = false;
+
+    private async Task HandleSaved()
+    {
+        showSettings = false;
+
+        await OnSettingsSaved.InvokeAsync();
+
+        StateHasChanged();
+    }
+
     private async Task Logout()
     {
         await AuthService.LogoutAsync();

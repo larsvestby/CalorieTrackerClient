@@ -1,14 +1,30 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-
     <main>
         <div class="background">
-            <NavMenu />
+            <NavMenu OnSettingsSaved="RefreshNutrition" />
 
             <article class="content">
-                @Body
+                <CascadingValue Value="this">
+                    @Body
+                </CascadingValue>
             </article>
         </div>
     </main>
 </div>
+
+@code {
+    private Nutrition? nutritionRef;
+
+    public void RegisterNutrition(Nutrition instance)
+    {
+        nutritionRef = instance;
+    }
+
+    private async Task RefreshNutrition()
+    {
+        if (nutritionRef is not null)
+            await nutritionRef.RefreshNutritionTargetsAsync();
+    }
+}

@@ -14,47 +14,49 @@
         <div class="calorie-card">
             @if (isLoading)
             {
-                        <p class="status-text">Loading...</p>
+                    <p class="status-text">Loading...</p>
             }
             else if (!string.IsNullOrEmpty(errorMessage))
             {
-                        <p class="status-text error">@errorMessage</p>
+                    <p class="status-text error">@errorMessage</p>
             }
             else if (nutrition is not null)
             {
-                        <div class="calorie-ring">
-                            <svg viewBox="0 0 120 120">
-                                <path class="ring-bg" d="M30 95 A45 45 0 1 1 90 95" />
-                                <path class="ring-fill" d="M30 95 A45 45 0 1 1 90 95"
-                                      style="stroke-dasharray:@CalorieDash 220;" />
-                            </svg>
-                            <div class="ring-text">
-                                <span>@ConsumedCalories.ToString("0")/@nutrition.DailyCalories.ToString("0") cal</span>
-                                <strong>@CaloriesLeft.ToString("0")</strong>
-                                <small>Cal left</small>
-                            </div>
+                    <div class="calorie-ring">
+                        <svg viewBox="0 0 120 120">
+                            <path class="ring-bg" d="M30 95 A45 45 0 1 1 90 95" />
+                            <path class="ring-fill" d="M30 95 A45 45 0 1 1 90 95"
+                                  style="stroke-dasharray:@CalorieDash 220;" />
+                        </svg>
+                        <div class="ring-text">
+                            <span>@ConsumedCalories.ToString("0")/@nutrition.DailyCalories.ToString("0") cal</span>
+                            <strong>@CaloriesLeft.ToString("0")</strong>
+                            <small>Cal left</small>
                         </div>
+                    </div>
 
-                        <div class="water-bar">
-                            <div></div>
-                        </div>
+                    <div class="water-bar">
+                        <div></div>
+                    </div>
             }
         </div>
     </CardContainer>
 
     @if (nutrition is not null)
     {
-                <div class="macro-grid">
-                    <MacroCard Name="Carbohydrates" Current="@consumedCarbs"  Target="@nutrition.Macros.CarbsGrams" />
-                    <MacroCard Name="Protein"       Current="@consumedProtein" Target="@nutrition.Macros.ProteinGrams" />
-                    <MacroCard Name="Fat"           Current="@consumedFat"    Target="@nutrition.Macros.FatGrams" />
-                </div>
+            <div class="macro-grid">
+                <MacroCard Name="Carbohydrates" Current="@consumedCarbs"   Target="@nutrition.Macros.CarbsGrams" />
+                <MacroCard Name="Protein"       Current="@consumedProtein" Target="@nutrition.Macros.ProteinGrams" />
+                <MacroCard Name="Fat"           Current="@consumedFat"     Target="@nutrition.Macros.FatGrams" />
+            </div>
     }
 
     <FoodLog Date="@selectedDate" OnChanged="LoadDataAsync" />
 </div>
 
 @code {
+    [Parameter] public EventCallback OnMounted { get; set; }
+
     private NutritionResponseDto? nutrition;
     private bool isLoading = true;
     private string? errorMessage;
@@ -78,7 +80,11 @@
 
     private double CalorieDash => CalorieProgress * 220;
 
-    protected override async Task OnInitializedAsync() => await LoadDataAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        await OnMounted.InvokeAsync();
+    }
 
     private async Task PreviousDay()
     {
@@ -92,6 +98,15 @@
         await LoadDataAsync();
     }
 
+    public async Task RefreshNutritionTargetsAsync()
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        });
+    }
+
     private async Task LoadDataAsync()
     {
         isLoading = true;
@@ -99,7 +114,7 @@
 
         try
         {
-            nutrition ??= await NutritionService.GetMineAsync();
+            nutrition = await NutritionService.GetMineAsync();
 
             var meals = await MealService.GetByDateAsync(selectedDate);
 

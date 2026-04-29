@@ -16,8 +16,11 @@ public class JwtAuthStateProvider(
     {
         var token = await authService.GetStoredTokenAsync();
 
-        if (string.IsNullOrWhiteSpace(token))
+        if (string.IsNullOrWhiteSpace(token) || IsTokenExpired(token))
+        {
+            httpClient.DefaultRequestHeaders.Authorization = null;
             return new AuthenticationState(_anonymous);
+        }
 
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
@@ -46,5 +49,13 @@ public class JwtAuthStateProvider(
         var token = handler.ReadJwtToken(jwt);
 
         return token.Claims;
+    }
+
+    private static bool IsTokenExpired(string jwt)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(jwt);
+
+        return token.ValidTo <= DateTime.UtcNow;
     }
 }

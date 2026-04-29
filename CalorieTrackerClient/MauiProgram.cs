@@ -32,6 +32,7 @@ namespace CalorieTrackerClient
             builder.Services.AddScoped<IFoodItemService, FoodItemService>();
             builder.Services.AddScoped<IMealService, MealService>();
             builder.Services.AddScoped<INutritionService, NutritionService>();
+            builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<JwtAuthStateProvider>();
             builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
                 sp.GetRequiredService<JwtAuthStateProvider>());

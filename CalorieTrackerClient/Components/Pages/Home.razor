@@ -1,7 +1,19 @@
 ﻿@page "/home"
 @attribute [Authorize]
-@inject IAuthService AuthService
-@inject JwtAuthStateProvider AuthStateProvider
-@inject NavigationManager Navigation
+@using CalorieTrackerClient.Components.Layout
 
-<Nutrition />
+<Nutrition @ref="nutritionRef" />
+
+@code {
+    [CascadingParameter] private MainLayout? Layout { get; set; }
+
+    private Nutrition? nutritionRef;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Layout is not null && nutritionRef is not null)
+        {
+            Layout.RegisterNutrition(nutritionRef);
+        }
+    }
+}
