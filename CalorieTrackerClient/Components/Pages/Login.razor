@@ -58,9 +58,10 @@
             else
                 errorMessage = result.ErrorMessage ?? "Invalid email or password.";
         }
-        catch
+        catch (Exception ex)
         {
-            errorMessage = "Could not reach the server. Please check your connection.";
+            errorMessage = ex.Message;
+            System.Diagnostics.Debug.WriteLine(ex);
         }
         finally
         {

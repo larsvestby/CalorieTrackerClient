@@ -1,46 +1,68 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net.Http.Json;
+﻿using System.Text.Json;
 using CalorieTrackerClient.Models;
 using CalorieTrackerClient.Services.Interfaces;
 
 namespace CalorieTrackerClient.Services
 {
-    public class MealService(HttpClient http) : IMealService
+    public class MealService : IMealService
     {
-        private readonly HttpClient _http = http;
+        private readonly HttpClient _http;
+        private readonly IApiService _apiService;
+
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        public MealService(HttpClient http, IApiService apiService)
+        {
+            _http = http;
+            _apiService = apiService;
+        }
 
         public async Task<List<MealResponseDto>> GetByDateAsync(DateTime date)
         {
-            return await _http.GetFromJsonAsync<List<MealResponseDto>>(
-                $"api/meal?date={date:yyyy-MM-dd}"
-            ) ?? new();
+            var response = await _http.GetAsync($"api/meal?date={date:yyyy-MM-dd}");
+
+            if (!response.IsSuccessStatusCode)
+                return new();
+
+            var raw = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<List<MealResponseDto>>(raw, _jsonOptions) ?? new();
         }
 
         public async Task<MealResponseDto?> CreateAsync(DateTime date, int selectedMealType)
         {
-            var response = await _http.PostAsJsonAsync("api/meal", new
-            {
-                Date = date,
-                SelectedMealType = selectedMealType
-            });
+            var response = await _apiService.SendJsonAsync(
+                HttpMethod.Post,
+                "api/meal",
+                new
+                {
+                    Date = date,
+                    SelectedMealType = selectedMealType
+                }
+            );
 
             if (!response.IsSuccessStatusCode)
                 return null;
 
-            return await response.Content.ReadFromJsonAsync<MealResponseDto>();
+            var raw = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<MealResponseDto>(raw, _jsonOptions);
         }
 
         public async Task<bool> AddEntryAsync(int mealId, int foodItemId, double quantityInGrams)
         {
-            var response = await _http.PostAsJsonAsync($"api/meal/{mealId}/entries", new
-            {
-                FoodItemID = foodItemId,
-                QuantityInGrams = quantityInGrams
-            });
+            var response = await _apiService.SendJsonAsync(
+                HttpMethod.Post,
+                $"api/meal/{mealId}/entries",
+                new
+                {
+                    FoodItemID = foodItemId,
+                    QuantityInGrams = quantityInGrams
+                }
+            );
 
             return response.IsSuccessStatusCode;
         }

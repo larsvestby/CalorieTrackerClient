@@ -1,28 +1,47 @@
 ﻿using CalorieTrackerClient.Models;
 using CalorieTrackerClient.Services.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Json;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace CalorieTrackerClient.Services
 {
-    public class FoodItemService(HttpClient http) : IFoodItemService
+    public class FoodItemService : IFoodItemService
     {
-        private readonly HttpClient _http = http;
+        private readonly HttpClient _http;
+        private readonly IApiService _apiService;
+
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        public FoodItemService(HttpClient http, IApiService apiService)
+        {
+            _http = http;
+            _apiService = apiService;
+        }
 
         public async Task<List<FoodItemDto>> SearchAsync(string searchText)
         {
-            return await _http.GetFromJsonAsync<List<FoodItemDto>>(
+            var response = await _http.GetAsync(
                 $"api/fooditem?search={Uri.EscapeDataString(searchText)}"
-            ) ?? new();
+            );
+
+            if (!response.IsSuccessStatusCode)
+                return new();
+
+            var raw = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<List<FoodItemDto>>(raw, _jsonOptions) ?? new();
         }
 
         public async Task<bool> CreateAsync(CreateFoodItemDto dto)
         {
-            var response = await _http.PostAsJsonAsync("api/fooditem", dto);
+            var response = await _apiService.SendJsonAsync(
+                HttpMethod.Post,
+                "api/fooditem",
+                dto
+            );
+
             return response.IsSuccessStatusCode;
         }
     }

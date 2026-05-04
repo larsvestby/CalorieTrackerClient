@@ -2,7 +2,6 @@
 using CalorieTrackerClient.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Authorization;
 
 namespace CalorieTrackerClient
 {
@@ -21,12 +20,12 @@ namespace CalorieTrackerClient
             builder.Services.AddMauiBlazorWebView();
 #if ANDROID
             builder.Services.AddScoped(sp =>
-                new HttpClient { BaseAddress = new Uri("http://10.0.2.2:5143/") });
+                new HttpClient { BaseAddress = new Uri("https://lars.buchwaldshave34.dk/") });
 #else
             builder.Services.AddScoped(sp =>
-                new HttpClient { BaseAddress = new Uri("https://localhost:7072/") });
+                new HttpClient { BaseAddress = new Uri("https://lars.buchwaldshave34.dk/") });
 #endif
-
+            builder.Services.AddScoped<IApiService, ApiService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddAuthorizationCore();
             builder.Services.AddScoped<IFoodItemService, FoodItemService>();

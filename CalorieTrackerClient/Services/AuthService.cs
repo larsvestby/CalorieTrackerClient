@@ -1,13 +1,14 @@
-﻿using System.Net.Http.Json;
-using System.Text.Json;
+﻿using System.Text.Json;
 using CalorieTrackerClient.Models;
 using CalorieTrackerClient.Services.Interfaces;
 
 namespace CalorieTrackerClient.Services
 {
-    public class AuthService(HttpClient httpClient) : IAuthService
+    public class AuthService : IAuthService
     {
-        private readonly HttpClient _httpClient = httpClient;
+        private readonly HttpClient _httpClient;
+        private readonly IApiService _apiService;
+
         private const string TokenKey = "auth_token";
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -15,44 +16,77 @@ namespace CalorieTrackerClient.Services
             PropertyNameCaseInsensitive = true
         };
 
+        public AuthService(HttpClient httpClient, IApiService apiService)
+        {
+            _httpClient = httpClient;
+            _apiService = apiService;
+        }
+
         public async Task<AuthResult> LoginAsync(string email, string password)
         {
-            var payload = new { email, password };
-            var response = await _httpClient.PostAsJsonAsync("api/auth/login", payload);
-
-            if (response.IsSuccessStatusCode)
+            var payload = new
             {
-                var data = await response.Content.ReadFromJsonAsync<AuthResponse>(_jsonOptions);
-                if (data?.Token != null)
-                {
-                    await StoreTokenAsync(data.Token);
-                    SetAuthHeader(data.Token);
-                    return new AuthResult { Success = true, Token = data.Token, User = data.User };
-                }
-            }
+                email,
+                password
+            };
 
-            return new AuthResult { Success = false, ErrorMessage = await ParseErrorAsync(response) };
+            var response = await _apiService.SendJsonAsync(
+                HttpMethod.Post,
+                "api/auth/login",
+                payload
+            );
+
+            return await HandleAuthResponse(response);
         }
 
         public async Task<AuthResult> RegisterAsync(RegisterRequest request)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/auth/register", request, _jsonOptions);
+            var response = await _apiService.SendJsonAsync(
+                HttpMethod.Post,
+                "api/auth/register",
+                request
+            );
 
-            if (response.IsSuccessStatusCode)
+            return await HandleAuthResponse(response);
+        }
+
+        private async Task<AuthResult> HandleAuthResponse(HttpResponseMessage response)
+        {
+            var raw = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
             {
-                var data = await response.Content.ReadFromJsonAsync<AuthResponse>(_jsonOptions);
-                if (data?.Token != null)
+                return new AuthResult
                 {
-                    await StoreTokenAsync(data.Token);
-                    SetAuthHeader(data.Token);
-                    return new AuthResult { Success = true, Token = data.Token, User = data.User };
-                }
+                    Success = false,
+                    ErrorMessage = raw
+                };
             }
 
-            return new AuthResult { Success = false, ErrorMessage = await ParseErrorAsync(response) };
+            var authResponse = JsonSerializer.Deserialize<AuthResponse>(raw, _jsonOptions);
+
+            if (authResponse?.Token == null)
+            {
+                return new AuthResult
+                {
+                    Success = false,
+                    ErrorMessage = "No token returned."
+                };
+            }
+
+            await StoreTokenAsync(authResponse.Token);
+            SetAuthHeader(authResponse.Token);
+
+            return new AuthResult
+            {
+                Success = true,
+                Token = authResponse.Token,
+                User = authResponse.User
+            };
         }
 
         public List<ActivityLevelDto> GetActivityLevels() => ActivityLevelDto.GetAll();
+
         public List<GoalDto> GetGoals() => GoalDto.GetAll();
 
         public Task LogoutAsync()
@@ -76,21 +110,6 @@ namespace CalorieTrackerClient.Services
         private static async Task StoreTokenAsync(string token)
         {
             await SecureStorage.Default.SetAsync(TokenKey, token);
-        }
-
-        private static async Task<string> ParseErrorAsync(HttpResponseMessage response)
-        {
-            var body = await response.Content.ReadAsStringAsync();
-
-            Console.WriteLine($"Status: {response.StatusCode}");
-            Console.WriteLine($"Error body: {body}");
-
-            if (!string.IsNullOrWhiteSpace(body))
-                return body;
-
-            return response.StatusCode == System.Net.HttpStatusCode.Unauthorized
-                ? "Invalid email or password."
-                : "An error occurred. Please try again.";
         }
     }
 }
