@@ -23,7 +23,7 @@ namespace CalorieTrackerClient
                 new HttpClient { BaseAddress = new Uri("https://lars.buchwaldshave34.dk/") });
 #else
             builder.Services.AddScoped(sp =>
-                new HttpClient { BaseAddress = new Uri("https://lars.buchwaldshave34.dk/") });
+                new HttpClient { BaseAddress = new Uri("https://localhost:7072/") });
 #endif
             builder.Services.AddScoped<IApiService, ApiService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
