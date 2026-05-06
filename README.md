@@ -16,6 +16,6 @@ powershell
 
 7. Kør kommandoen:
 
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Censor.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1
 
 8. Programmet installeres nu.
